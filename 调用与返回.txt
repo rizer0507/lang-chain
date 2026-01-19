@@ -1,0 +1,233 @@
+第一次调用：
+
+{
+
+ "model": "Qwen2-VL-7B-Instruct",
+
+ "messages": [
+
+  {
+
+   "role": "user",
+
+   "content": "请调用 get_current_time 工具获取当前时间，然后用中文回答：现在几点？"
+
+  }
+
+ ],
+
+ "tools": [
+
+  {
+
+   "type": "function",
+
+   "function": {
+
+​    "name": "get_current_time",
+
+​    "description": "获取当前时间（建议返回 ISO8601 字符串）。",
+
+​    "parameters": {
+
+​     "type": "object",
+
+​     "properties": {},
+
+​     "required": []
+
+​    }
+
+   }
+
+  }
+
+ ],
+
+ "tool_choice": { "type": "function", "function": { "name": "get_current_time" } },
+
+ "stream": false,
+
+ "max_tokens": 128
+
+}
+
+返回结果：
+
+{
+    "id": "chatcmpl-ae88650ade9b4a6ab24673db19b9fb7e",
+    "object": "chat.completion",
+    "created": 1768296893,
+    "model": "Qwen2-VL-7B-Instruct",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "",
+                "refusal": null,
+                "annotations": null,
+                "audio": null,
+                "function_call": null,
+                "tool_calls": [
+                    {
+                        "id": "chatcmpl-tool-b7e98b4631854dedb645e448e1ec7a92",
+                        "type": "function",
+                        "function": {
+                            "name": "get_current_time",
+                            "arguments": "{}"
+                        }
+                    }
+                ],
+                "reasoning_content": null
+            },
+            "logprobs": null,
+            "finish_reason": "stop",
+            "stop_reason": null,
+            "token_ids": null
+        }
+    ],
+    "service_tier": null,
+    "system_fingerprint": null,
+    "usage": {
+        "prompt_tokens": 40,
+        "total_tokens": 43,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "kv_transfer_params": null
+}
+
+第二次调用：{
+
+ "model": "Qwen2-VL-7B-Instruct",
+
+ "messages": [
+
+  {
+
+   "role": "user",
+
+   "content": "请调用 get_current_time 工具获取当前时间，然后用中文回答：现在几点？"
+
+  },
+
+  {
+
+   "role": "assistant",
+
+   "content": "",
+
+   "tool_calls": [
+
+​    {
+
+​     "id": "chatcmpl-tool-b7e98b4631854dedb645e448e1ec7a92",
+
+​     "type": "function",
+
+​     "function": {
+
+​      "name": "get_current_time",
+
+​      "arguments": "{}"
+
+​     }
+
+​    }
+
+   ]
+
+  },
+
+  {
+
+   "role": "tool",
+
+   "tool_call_id": "chatcmpl-tool-b7e98b4631854dedb645e448e1ec7a92",
+
+   "content": "{\"time\":\"2026-01-13T18:34:53+09:00\"}"
+
+  }
+
+ ],
+
+ "max_tokens": 128
+
+}
+
+返回结果：
+
+{
+
+  "id": "chatcmpl-ec8d2a9ab55c4d1b9a5274e24418330e",
+
+  "object": "chat.completion",
+
+  "created": 1768297106,
+
+  "model": "Qwen2-VL-7B-Instruct",
+
+  "choices": [
+
+​    {
+
+​      "index": 0,
+
+​      "message": {
+
+​        "role": "assistant",
+
+​        "content": "现在是2026年1月13日18点34分53秒。",
+
+​        "refusal": null,
+
+​        "annotations": null,
+
+​        "audio": null,
+
+​        "function_call": null,
+
+​        "tool_calls": [],
+
+​        "reasoning_content": null
+
+​      },
+
+​      "logprobs": null,
+
+​      "finish_reason": "stop",
+
+​      "stop_reason": null,
+
+​      "token_ids": null
+
+​    }
+
+  ],
+
+  "service_tier": null,
+
+  "system_fingerprint": null,
+
+  "usage": {
+
+​    "prompt_tokens": 79,
+
+​    "total_tokens": 102,
+
+​    "completion_tokens": 23,
+
+​    "prompt_tokens_details": null
+
+  },
+
+  "prompt_logprobs": null,
+
+  "prompt_token_ids": null,
+
+  "kv_transfer_params": null
+
+}

@@ -1,0 +1,66 @@
+### 背景与环境
+- **本地**：Windows 仅编辑脚本；实际运行在 253 Linux 服务器
+- **vLLM**：0.11.0（V1 引擎开启：VLLM_USE_V1=1），OpenAI 兼容 `/v1/chat/completions`
+- **PyTorch**：2.8.0+cu128
+- **驱动/CUDA**：NVIDIA Driver 535.274.02，CUDA 12.2
+- **GPU**：8×V100 32G（本次主要使用 0/1/2/3 做 TP）
+- **复现脚本**：examples/vllm_agent_save_answer/run_agent.py（容器外运行，调用容器内 vLLM）
+- **vLLM 启动参数基础**：模型 Qwen2-VL-7B-Instruct，max-model-len 4096，dtype half，max-num-seqs 16，gpu-memory-utilization 0.8，enable-auto-tool-choice，tool-call-parser hermes
+
+### 问题1：日志时间 1.15 vs 实际执行 1.16
+- 现象：vLLM 容器日志时间与宿主机/脚本的 `datetime.now()` 生成的时间戳相差 16 小时（类似 UTC-8 与 Asia/Shanghai 的差）。
+- 根因：**容器时区与宿主机不一致**（脚本在容器外，vLLM 在容器内，两个运行环境的时区配置不同）。
+- 解决：docker run 增加
+  - `-v /etc/localtime:/etc/localtime:ro`
+  - `-v /etc/timezone:/etc/timezone:ro`（可选）
+  - `-e TZ=Asia/Shanghai`
+- 结果：日志时间对齐（01-16）。
+
+### 问题2：vLLM 500 + EngineDeadError 的根因定位
+- 现象：第二次请求（包含 tool call 返回后）触发 500，vLLM EngineCore 死亡。
+- 核心报错：`CUDA error: an illegal memory access was encountered`，随后 `EngineDeadError`。
+- 堆栈特征：
+  - 多次出现在 `vllm/v1/attention/backends/flex_attention.py` 相关路径
+  - 同时伴随 `torch._inductor` / `compile_fx.py` / `cudagraph_trees.py` / `triton_heuristics`（autotune/synchronize）等编译执行链路
+- 初始（TP=4）日志还出现：`custom_all_reduce.cuh:621`（多次）
+  - 说明 custom all-reduce 可能参与，但不一定是主因
+
+### 已做实验与结论（非常关键）
+1) **A：禁用 custom all-reduce**
+- 做法：启动参数中使 `disable_custom_all_reduce=True`（例如加 `--disable-custom-all-reduce`）
+- 结果：
+  - `custom_all_reduce.cuh:621` 不再出现
+  - 但仍然在 `flex_attention + inductor/triton` 路径上 `illegal memory access` 崩溃
+- 结论：**custom all-reduce 不是主因**（最多是连带爆炸点）
+
+2) **B1：强制 eager（尝试绕开 cudagraph）**
+- 做法：加 `--enforce-eager`（help 显示支持）
+- 结果：
+  - 配置里 `enforce_eager=True` 生效
+  - 但仍然出现 `illegal memory access`，并且日志/栈里仍能看到 `torch._inductor`/`cudagraph_trees` 等痕迹
+- 结论：**仅 enforce_eager 不足以消除问题**（问题仍在 attention/编译链路上）
+
+3) **TP=1（单卡）定位**
+- 做法：`--tensor-parallel-size 1`，`--gpus "device=0"`；同时保持 `--disable-custom-all-reduce` 与 `--enforce-eager`
+- 结果：两次请求均 200 OK，无崩溃，无 illegal memory access
+- 结论：**问题与多卡/TP 强相关（单卡不触发）**
+
+4) **TP=2（双卡，0,1）定位**
+- 做法：`--tensor-parallel-size 2`，`--gpus "device=0,1"`；保持 `--disable-custom-all-reduce` 与 `--enforce-eager`
+- 结果：也不报错（稳定）
+- 结论：触发条件很可能是 **TP=4** 或某些 GPU/并行规模/调度组合（至少 TP≤2 稳定）
+
+### 当前最强推断
+- 崩溃不是脚本层问题，而是 **vLLM v1 + torch2.8 + V100（sm70）在更高 TP（≥4）下的 attention/编译执行路径不稳定**。
+- 已排除：纯时区问题、纯 custom all-reduce 问题、单纯 cudagraph（仅 enforce_eager 仍不够）。
+- 已确认：与“并行规模/多进程/TP worker”高度相关（TP=1/2 稳定）。
+
+### 下一轮对话建议的继续探索方向（待定稿）
+- 在保持当前保守配置（disable_custom_all_reduce + enforce_eager）下继续做定位：
+  - 试 TP=3（0,1,2）是否稳定
+  - 试 TP=4 但更换 GPU 组合（例如 0,1,2,3 vs 4,5,6,7），排除个别卡/拓扑问题
+  - 试 TP=4 降低 max-num-seqs / gpu-memory-utilization 等，观察触发与 batch/shape 的关系
+- 利用 help 中现有开关进一步缩小 attention 触发面：
+  - `--disable-cascade-attn`
+  - `--override-attention-dtype`（优先强制 fp16，避免任何非 V100 友好 dtype 路径）
+- 若仍无法稳定，考虑“版本组合”路线：调整 torch/vLLM 版本到对 V100 更成熟的组合（需要在服务器侧验证）

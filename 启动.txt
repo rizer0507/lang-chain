@@ -1,0 +1,209 @@
+docker rm -f vllm-qwen2vl
+
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus all \
+  --ipc=host \
+  --shm-size=16g \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  ee2917e260bb \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 4096 \
+    --tensor-parallel-size 4 \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 16 \
+    --enable-log-requests
+
+
+
+python3 -m vllm.entrypoints.openai.api_server --host 0.0.0.0 --port 8000 --model /models/Qwen2-VL-7B-Instruct --served-model-name Qwen2-VL-7B-Instruct --max-model-len 8192 --tensor-parallel-size 4 --gpu-memory-utilization 0.92 --max-num-seqs 256 --enable-log-requests
+
+
+
+# 删除旧容器（不会删模型缓存，因为你挂载了 /root/.cache/huggingface）
+docker rm vllm-qwen2vl
+
+# 重新启动：TP=4 + DP=2 => 8 卡全用上
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus all \
+  --ipc=host \
+  --shm-size=16g \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  ee2917e260bb \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 8192 \
+    --tensor-parallel-size 4 \
+    --data-parallel-size 2 \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 256 \
+    --max-parallel-loading-workers 1 \
+    --enable-log-requests
+
+
+
+
+
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus '"device=0,1,2,3"' \
+  --ipc=host \
+  --shm-size=16g \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e VLLM_USE_FLASHINFER_SAMPLER=0 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  --entrypoint bash \
+  ee2917e260bb \
+  -lc 'pip uninstall -y flashinfer flashinfer-python || true; exec python3 -m vllm.entrypoints.openai.api_server \
+    --host 0.0.0.0 --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 4096 \
+    --tensor-parallel-size 4 \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 16 \
+    --enable-log-requests'
+
+改版：
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus '"device=0,1,2,3"' \
+  --ipc=host \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e VLLM_USE_FLASHINFER_SAMPLER=0 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  --entrypoint bash \
+  ee2917e260bb \
+  -lc 'exec python3 -m vllm.entrypoints.openai.api_server \
+    --host 0.0.0.0 --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 4096 \
+    --tensor-parallel-size 4 \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 16 \
+    --dtype half \
+    --enable-log-requests'
+
+
+
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus '"device=0,1,2,3"' \
+  --ipc=host \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e VLLM_USE_FLASHINFER_SAMPLER=0 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  --entrypoint bash \
+  ee2917e260bb \
+  -lc 'exec python3 -m vllm.entrypoints.openai.api_server \
+    --host 0.0.0.0 --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 4096 \
+    --tensor-parallel-size 4 \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 16 \
+    --dtype half \
+    --enable-log-requests \
+    --tensor-parallel-size 4 \
+    --enforce-eager \
+    --disable-custom-all reuce '
+
+
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus '"device=0,1,2,3"' \
+  --ipc=host \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e VLLM_USE_FLASHINFER_SAMPLER=0 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /etc/timezone:/etc/timezone:ro \
+  -e TZ=Asia/Shanghai \
+  --entrypoint bash \
+  ee2917e260bb \
+  -lc 'exec python3 -m vllm.entrypoints.openai.api_server \
+    --host 0.0.0.0 --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 4096 \
+    --tensor-parallel-size 4 \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 16 \
+    --dtype half \
+    --enable-log-requests \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes '
+
+
+验证：
+docker run -d --name vllm-qwen2vl \
+  --restart unless-stopped \
+  --gpus '"device=4,5,6,7"' \
+  --ipc=host \
+  -p 8000:8000 \
+  -e VLLM_USE_V1=1 \
+  -e VLLM_USE_FLASHINFER_SAMPLER=0 \
+  -e HF_HOME=/root/.cache/huggingface \
+  -e TRANSFORMERS_OFFLINE=1 \
+  -e HF_HUB_OFFLINE=1 \
+  -v /root/.cache/huggingface:/root/.cache/huggingface \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /etc/timezone:/etc/timezone:ro \
+  -e TZ=Asia/Shanghai \
+  --entrypoint bash \
+  ee2917e260bb \
+  -lc 'exec python3 -m vllm.entrypoints.openai.api_server \
+    --host 0.0.0.0 --port 8000 \
+    --model /root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac \
+    --served-model-name Qwen2-VL-7B-Instruct \
+    --download-dir /root/.cache/huggingface \
+    --max-model-len 4096 \
+    --tensor-parallel-size 4 \
+    --disable-custom-all-reduce \
+    --gpu-memory-utilization 0.8 \
+    --max-num-seqs 16 \
+    --dtype half \
+    --enforce-eager \
+    --enable-log-requests \
+    --enable-auto-tool-choice \
+    --tool-call-parser hermes '

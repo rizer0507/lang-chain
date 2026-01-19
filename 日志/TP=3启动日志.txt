@@ -1,0 +1,54 @@
+(vLLM) root@k8smaster:~# docker logs -f vllm-qwen2vl
+INFO 01-16 17:25:07 [__init__.py:216] Automatically detected platform cuda.
+(APIServer pid=1) INFO 01-16 17:25:13 [api_server.py:1839] vLLM API server version 0.11.0
+(APIServer pid=1) INFO 01-16 17:25:13 [utils.py:233] non-default args: {'host': '0.0.0.0', 'enable_auto_tool_choice': True, 'tool_call_parser': 'hermes', 'model': '/root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac', 'dtype': 'half', 'max_model_len': 4096, 'enforce_eager': True, 'served_model_name': ['Qwen2-VL-7B-Instruct'], 'download_dir': '/root/.cache/huggingface', 'tensor_parallel_size': 3, 'disable_custom_all_reduce': True, 'gpu_memory_utilization': 0.8, 'max_num_seqs': 16, 'enable_log_requests': True}
+(APIServer pid=1) INFO 01-16 17:25:13 [arg_utils.py:504] HF_HUB_OFFLINE is True, replace model_id [/root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac] to model_path [/root/.cache/huggingface/hub/models--Qwen--Qwen2-VL-7B-Instruct/snapshots/eed13092ef92e448dd6875b2a00151bd3f7db0ac]
+(APIServer pid=1) INFO 01-16 17:25:25 [model.py:547] Resolved architecture: Qwen2VLForConditionalGeneration
+(APIServer pid=1) WARNING 01-16 17:25:25 [model.py:1733] Casting torch.bfloat16 to torch.float16.
+(APIServer pid=1) `torch_dtype` is deprecated! Use `dtype` instead!
+(APIServer pid=1) INFO 01-16 17:25:25 [model.py:1510] Using max model len 4096
+(APIServer pid=1) INFO 01-16 17:25:25 [scheduler.py:205] Chunked prefill is enabled with max_num_batched_tokens=2048.
+(APIServer pid=1) Traceback (most recent call last):
+(APIServer pid=1)   File "<frozen runpy>", line 198, in _run_module_as_main
+(APIServer pid=1)   File "<frozen runpy>", line 88, in _run_code
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 1953, in <module>
+(APIServer pid=1)     uvloop.run(run_server(args))
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/uvloop/__init__.py", line 109, in run
+(APIServer pid=1)     return __asyncio.run(
+(APIServer pid=1)            ^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 195, in run
+(APIServer pid=1)     return runner.run(main)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+(APIServer pid=1)     return self._loop.run_until_complete(task)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/uvloop/__init__.py", line 61, in wrapper
+(APIServer pid=1)     return await main
+(APIServer pid=1)            ^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 1884, in run_server
+(APIServer pid=1)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 1902, in run_server_worker
+(APIServer pid=1)     async with build_async_engine_client(
+(APIServer pid=1)                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=1)     return await anext(self.gen)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 180, in build_async_engine_client
+(APIServer pid=1)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=1)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=1)     return await anext(self.gen)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 206, in build_async_engine_client_from_engine_args
+(APIServer pid=1)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=1)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/vllm/engine/arg_utils.py", line 1431, in create_engine_config
+(APIServer pid=1)     config = VllmConfig(
+(APIServer pid=1)              ^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/local/lib/python3.12/dist-packages/pydantic/_internal/_dataclasses.py", line 123, in __init__
+(APIServer pid=1)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=1) pydantic_core._pydantic_core.ValidationError: 1 validation error for VllmConfig
+(APIServer pid=1)   Value error, Total number of attention heads (28) must be divisible by tensor parallel size (3). [type=value_error, input_value=ArgsKwargs((), {'model_co...additional_config': {}}), input_type=ArgsKwargs]
+(APIServer pid=1)     For further information visit https://errors.pydantic.dev/2.11/v/value_error
+(vLLM) root@k8smaster:~#
