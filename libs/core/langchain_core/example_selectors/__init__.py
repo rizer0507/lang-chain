@@ -2,6 +2,11 @@
 
 **Example selector** implements logic for selecting examples to include them in prompts.
 This allows us to select examples that are most relevant to the input.
+
+中文翻译:
+选择器示例。
+**示例选择器** 实现选择示例以将其包含在提示中的逻辑。
+这使我们能够选择与输入最相关的示例。
 """
 
 from typing import TYPE_CHECKING

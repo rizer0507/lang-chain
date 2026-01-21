@@ -1,4 +1,7 @@
-"""Internal tracer to power the event stream API."""
+"""Internal tracer to power the event stream API.
+
+中文翻译:
+为事件流 API 提供支持的内部跟踪器。"""
 
 from __future__ import annotations
 
@@ -59,24 +62,49 @@ class RunInfo(TypedDict):
     """Information about a run.
 
     This is used to keep track of the metadata associated with a run.
-    """
+    
+
+    中文翻译:
+    有关跑步的信息。
+    这用于跟踪与运行相关的元数据。"""
 
     name: str
-    """The name of the run."""
+    """The name of the run.
+
+    中文翻译:
+    运行的名称。"""
     tags: list[str]
-    """The tags associated with the run."""
+    """The tags associated with the run.
+
+    中文翻译:
+    与运行关联的标签。"""
     metadata: dict[str, Any]
-    """The metadata associated with the run."""
+    """The metadata associated with the run.
+
+    中文翻译:
+    与运行关联的元数据。"""
     run_type: str
-    """The type of the run."""
+    """The type of the run.
+
+    中文翻译:
+    运行的类型。"""
     inputs: NotRequired[Any]
-    """The inputs to the run."""
+    """The inputs to the run.
+
+    中文翻译:
+    运行的输入。"""
     parent_run_id: UUID | None
-    """The ID of the parent run."""
+    """The ID of the parent run.
+
+    中文翻译:
+    父运行的 ID。"""
 
 
 def _assign_name(name: str | None, serialized: dict[str, Any] | None) -> str:
-    """Assign a name to a run."""
+    """Assign a name to a run.
+
+    中文翻译:
+    为运行指定名称。"""
     if name is not None:
         return name
     if serialized is not None:
@@ -91,7 +119,10 @@ T = TypeVar("T")
 
 
 class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHandler):
-    """An implementation of an async callback handler for astream events."""
+    """An implementation of an async callback handler for astream events.
+
+    中文翻译:
+    astream 事件的异步回调处理程序的实现。"""
 
     def __init__(
         self,
@@ -104,22 +135,34 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         exclude_tags: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize the tracer."""
+        """Initialize the tracer.
+
+        中文翻译:
+        初始化跟踪器。"""
         super().__init__(*args, **kwargs)
         # Map of run ID to run info.
+        # 中文: 运行 ID 到运行信息的映射。
         # the entry corresponding to a given run id is cleaned
+        # 中文: 与给定运行 ID 对应的条目被清理
         # up when each corresponding run ends.
+        # 中文: 当每个相应的运行结束时。
         self.run_map: dict[UUID, RunInfo] = {}
         # The callback event that corresponds to the end of a parent run
+        # 中文: 对应于父运行结束的回调事件
         # may be invoked BEFORE the callback event that corresponds to the end
+        # 中文: 可以在对应于结束的回调事件之前调用
         # of a child run, which results in clean up of run_map.
+        # 中文: 子运行，这会导致 run_map 的清理。
         # So we keep track of the mapping between children and parent run IDs
+        # 中文: 因此我们跟踪子代和父代运行 ID 之间的映射
         # in a separate container. This container is GCed when the tracer is GCed.
+        # 中文: 在一个单独的容器中。当跟踪器被 GC 时，该容器也被 GC。
         self.parent_map: dict[UUID, UUID | None] = {}
 
         self.is_tapped: dict[UUID, Any] = {}
 
         # Filter which events will be sent over the queue.
+        # 中文: 过滤哪些事件将通过队列发送。
         self.root_event_filter = _RootEventFilter(
             include_names=include_names,
             include_types=include_types,
@@ -138,7 +181,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         self.receive_stream = memory_stream.get_receive_stream()
 
     def _get_parent_ids(self, run_id: UUID) -> list[str]:
-        """Get the parent IDs of a run (non-recursively) cast to strings."""
+        """Get the parent IDs of a run (non-recursively) cast to strings.
+
+        中文翻译:
+        获取运行（非递归）转换为字符串的父 ID。"""
         parent_ids = []
 
         while parent_id := self.parent_map.get(run_id):
@@ -153,11 +199,16 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
             run_id = parent_id
 
         # Return the parent IDs in reverse order, so that the first
+        # 中文: 以相反的顺序返回父 ID，以便第一个
         # parent ID is the root and the last ID is the immediate parent.
+        # 中文: 父 ID 是根 ID，最后一个 ID 是直接父 ID。
         return parent_ids[::-1]
 
     def _send(self, event: StreamEvent, event_type: str) -> None:
-        """Send an event to the stream."""
+        """Send an event to the stream.
+
+        中文翻译:
+        将事件发送到流。"""
         if self.root_event_filter.include_event(event, event_type):
             self.send_stream.send_nowait(event)
 
@@ -166,7 +217,12 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
         Returns:
             An async iterator over the receive stream.
-        """
+        
+
+        中文翻译:
+        迭代接收流。
+        返回：
+            接收流上的异步迭代器。"""
         return self.receive_stream.__aiter__()
 
     async def tap_output_aiter(
@@ -184,22 +240,38 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
         Yields:
             The output of the Runnable.
-        """
+        
+
+        中文翻译:
+        点击输出 aiter。
+        此方法用于点击 Runnable 的输出，该 Runnable 产生
+        异步迭代器。它用于生成流事件
+        可运行的输出。
+        参数：
+            run_id：运行的 ID。
+            输出：Runnable 的输出。
+        产量：
+            可运行的输出。"""
         sentinel = object()
         # atomic check and set
+        # 中文: 原子检查和设置
         tap = self.is_tapped.setdefault(run_id, sentinel)
         # wait for first chunk
+        # 中文: 等待第一个块
         first = await anext(output, sentinel)
         if first is sentinel:
             return
         # get run info
+        # 中文: 获取跑步信息
         run_info = self.run_map.get(run_id)
         if run_info is None:
             # run has finished, don't issue any stream events
+            # 中文: 运行已完成，不发出任何流事件
             yield cast("T", first)
             return
         if tap is sentinel:
             # if we are the first to tap, issue stream events
+            # 中文: 如果我们是第一个点击的，则发出流事件
             event: StandardStreamEvent = {
                 "event": f"on_{run_info['run_type']}_stream",
                 "run_id": str(run_id),
@@ -212,6 +284,7 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
             self._send({**event, "data": {"chunk": first}}, run_info["run_type"])
             yield cast("T", first)
             # consume the rest of the output
+            # 中文: 消耗剩余的输出
             async for chunk in output:
                 self._send(
                     {**event, "data": {"chunk": chunk}},
@@ -220,8 +293,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
                 yield chunk
         else:
             # otherwise just pass through
+            # 中文: 否则就通过
             yield cast("T", first)
             # consume the rest of the output
+            # 中文: 消耗剩余的输出
             async for chunk in output:
                 yield chunk
 
@@ -234,22 +309,35 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
         Yields:
             The output of the Runnable.
-        """
+        
+
+        中文翻译:
+        点击输出迭代器。
+        参数：
+            run_id：运行的 ID。
+            输出：Runnable 的输出。
+        产量：
+            可运行的输出。"""
         sentinel = object()
         # atomic check and set
+        # 中文: 原子检查和设置
         tap = self.is_tapped.setdefault(run_id, sentinel)
         # wait for first chunk
+        # 中文: 等待第一个块
         first = next(output, sentinel)
         if first is sentinel:
             return
         # get run info
+        # 中文: 获取跑步信息
         run_info = self.run_map.get(run_id)
         if run_info is None:
             # run has finished, don't issue any stream events
+            # 中文: 运行已完成，不发出任何流事件
             yield cast("T", first)
             return
         if tap is sentinel:
             # if we are the first to tap, issue stream events
+            # 中文: 如果我们是第一个点击的，则发出流事件
             event: StandardStreamEvent = {
                 "event": f"on_{run_info['run_type']}_stream",
                 "run_id": str(run_id),
@@ -262,6 +350,7 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
             self._send({**event, "data": {"chunk": first}}, run_info["run_type"])
             yield cast("T", first)
             # consume the rest of the output
+            # 中文: 消耗剩余的输出
             for chunk in output:
                 self._send(
                     {**event, "data": {"chunk": chunk}},
@@ -270,8 +359,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
                 yield chunk
         else:
             # otherwise just pass through
+            # 中文: 否则就通过
             yield cast("T", first)
             # consume the rest of the output
+            # 中文: 消耗剩余的输出
             for chunk in output:
                 yield chunk
 
@@ -286,7 +377,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         run_type: str,
         **kwargs: Any,
     ) -> None:
-        """Update the run info."""
+        """Update the run info.
+
+        中文翻译:
+        更新运行信息。"""
         info: RunInfo = {
             "tags": tags or [],
             "metadata": metadata or {},
@@ -297,8 +391,11 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
         if "inputs" in kwargs:
             # Handle inputs in a special case to allow inputs to be an
+            # 中文: 处理特殊情况下的输入以允许输入成为
             # optionally provided and distinguish between missing value
+            # 中文: 可选提供并区分缺失值
             # vs. None value.
+            # 中文: 与无值。
             info["inputs"] = kwargs["inputs"]
 
         self.run_map[run_id] = info
@@ -317,7 +414,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         name: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Start a trace for a chat model run."""
+        """Start a trace for a chat model run.
+
+        中文翻译:
+        启动聊天模型运行的跟踪。"""
         name_ = _assign_name(name, serialized)
         run_type = "chat_model"
 
@@ -359,7 +459,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         name: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Start a trace for a (non-chat model) LLM run."""
+        """Start a trace for a (non-chat model) LLM run.
+
+        中文翻译:
+        启动（非聊天模型）LLM 运行的跟踪。"""
         name_ = _assign_name(name, serialized)
         run_type = "llm"
 
@@ -401,7 +504,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Generate a custom astream event."""
+        """Generate a custom astream event.
+
+        中文翻译:
+        生成自定义 astream 事件。"""
         event = CustomStreamEvent(
             event="on_custom_event",
             run_id=str(run_id),
@@ -430,7 +536,14 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         Raises:
             ValueError: If the run type is not `llm` or `chat_model`.
             AssertionError: If the run ID is not found in the run map.
-        """
+        
+
+        中文翻译:
+        在新的输出令牌上运行。仅在启用流式传输时可用。
+        适用于聊天模型和非聊天模型（传统法学硕士）。
+        加薪：
+            ValueError：如果运行类型不是“llm”或“chat_model”。
+            AssertionError：如果在运行映射中找不到运行 ID。"""
         run_info = self.run_map.get(run_id)
         chunk_: GenerationChunk | BaseMessageChunk
 
@@ -482,7 +595,13 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
         Raises:
             ValueError: If the run type is not `'llm'` or `'chat_model'`.
-        """
+        
+
+        中文翻译:
+        结束模型运行的跟踪。
+        适用于聊天模型和非聊天模型（传统法学硕士）。
+        加薪：
+            ValueError：如果运行类型不是“llm”或“chat_model”。"""
         run_info = self.run_map.pop(run_id)
         inputs_ = run_info.get("inputs")
 
@@ -546,14 +665,19 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         name: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Start a trace for a chain run."""
+        """Start a trace for a chain run.
+
+        中文翻译:
+        开始跟踪链运行。"""
         name_ = _assign_name(name, serialized)
         run_type_ = run_type or "chain"
 
         data: EventData = {}
 
         # Work-around Runnable core code not sending input in some
+        # 中文: 解决可运行核心代码在某些情况下不发送输入的问题
         # cases.
+        # 中文: 案例。
         if inputs != {"input": ""}:
             data["input"] = inputs
             kwargs["inputs"] = inputs
@@ -590,7 +714,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         inputs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """End a trace for a chain run."""
+        """End a trace for a chain run.
+
+        中文翻译:
+        结束连锁运行的跟踪。"""
         run_info = self.run_map.pop(run_id)
         run_type = run_info["run_type"]
 
@@ -627,7 +754,16 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
         Raises:
             AssertionError: If the run ID is a tool call and does not have inputs.
-        """
+        
+
+        中文翻译:
+        获取工具的运行信息并提取输入并进行验证。
+        参数：
+            run_id：工具的运行 ID。
+        返回：
+            (run_info, input) 的元组。
+        加薪：
+            AssertionError：如果运行 ID 是工具调用并且没有输入。"""
         run_info = self.run_map.pop(run_id)
         if "inputs" not in run_info:
             msg = (
@@ -652,7 +788,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         inputs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Start a trace for a tool run."""
+        """Start a trace for a tool run.
+
+        中文翻译:
+        启动工具运行的跟踪。"""
         name_ = _assign_name(name, serialized)
 
         self._write_run_start_info(
@@ -690,7 +829,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         tags: list[str] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Run when tool errors."""
+        """Run when tool errors.
+
+        中文翻译:
+        当工具出错时运行。"""
         run_info, inputs = self._get_tool_run_info_with_inputs(run_id)
 
         self._send(
@@ -711,7 +853,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
 
     @override
     async def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
-        """End a trace for a tool run."""
+        """End a trace for a tool run.
+
+        中文翻译:
+        结束工具运行的跟踪。"""
         run_info, inputs = self._get_tool_run_info_with_inputs(run_id)
 
         self._send(
@@ -743,7 +888,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         name: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Run when Retriever starts running."""
+        """Run when Retriever starts running.
+
+        中文翻译:
+        当 Retriever 开始运行时运行。"""
         name_ = _assign_name(name, serialized)
         run_type = "retriever"
 
@@ -778,7 +926,10 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
     async def on_retriever_end(
         self, documents: Sequence[Document], *, run_id: UUID, **kwargs: Any
     ) -> None:
-        """Run when Retriever ends running."""
+        """Run when Retriever ends running.
+
+        中文翻译:
+        当猎犬结束运行时运行。"""
         run_info = self.run_map.pop(run_id)
 
         self._send(
@@ -798,11 +949,17 @@ class _AstreamEventsCallbackHandler(AsyncCallbackHandler, _StreamingCallbackHand
         )
 
     def __deepcopy__(self, memo: dict) -> _AstreamEventsCallbackHandler:
-        """Return self."""
+        """Return self.
+
+        中文翻译:
+        回归自我。"""
         return self
 
     def __copy__(self) -> _AstreamEventsCallbackHandler:
-        """Return self."""
+        """Return self.
+
+        中文翻译:
+        回归自我。"""
         return self
 
 
@@ -860,6 +1017,7 @@ async def _astream_events_implementation_v1(
 
         if not encountered_start_event:
             # Yield the start event for the root runnable.
+            # 中文: 产生根可运行的启动事件。
             encountered_start_event = True
             state = run_log.state.copy()
 
@@ -884,7 +1042,9 @@ async def _astream_events_implementation_v1(
             if op["path"].startswith("/logs/")
         }
         # Elements in a set should be iterated in the same order
+        # 中文: 集合中的元素应以相同的顺序迭代
         # as they were inserted in modern python versions.
+        # 中文: 因为它们被插入到现代 python 版本中。
         for path in paths:
             data: EventData = {}
             log_entry: LogEntry = run_log.state["logs"][path]
@@ -895,9 +1055,13 @@ async def _astream_events_implementation_v1(
 
             if event_type == "start":
                 # Include the inputs with the start event if they are available.
+                # 中文: 将输入包含在开始事件中（如果可用）。
                 # Usually they will NOT be available for components that operate
+                # 中文: 通常它们不可用于运行的组件
                 # on streams, since those components stream the input and
+                # 中文: 在流上，因为这些组件流式传输输入和
                 # don't know its final value until the end of the stream.
+                # 中文: 在流结束之前不知道其最终值。
                 inputs = log_entry.get("inputs")
                 if inputs is not None:
                     data["input"] = inputs
@@ -908,6 +1072,7 @@ async def _astream_events_implementation_v1(
                     data["input"] = inputs
 
                 # None is a VALID output for an end event
+                # 中文: None 是结束事件的有效输出
                 data["output"] = log_entry["final_output"]
 
             if event_type == "stream":
@@ -922,7 +1087,9 @@ async def _astream_events_implementation_v1(
 
                 data = {"chunk": log_entry["streamed_output"][0]}
                 # Clean up the stream, we don't need it anymore.
+                # 中文: 清理流，我们不再需要它了。
                 # And this avoids duplicates as well!
+                # 中文: 这也避免了重复！
                 log_entry["streamed_output"] = []
 
             yield StandardStreamEvent(
@@ -936,7 +1103,9 @@ async def _astream_events_implementation_v1(
             )
 
         # Finally, we take care of the streaming output from the root chain
+        # 中文: 最后，我们处理根链的流输出
         # if there is any.
+        # 中文: 如果有的话。
         state = run_log.state
         if state["streamed_output"]:
             num_chunks = len(state["streamed_output"])
@@ -950,6 +1119,7 @@ async def _astream_events_implementation_v1(
 
             data = {"chunk": state["streamed_output"][0]}
             # Clean up the stream, we don't need it anymore.
+            # 中文: 清理流，我们不再需要它了。
             state["streamed_output"] = []
 
             event = StandardStreamEvent(
@@ -967,6 +1137,7 @@ async def _astream_events_implementation_v1(
     state = run_log.state
 
     # Finally yield the end event for the root runnable.
+    # 中文: 最后产生根可运行对象的结束事件。
     event = StandardStreamEvent(
         event=f"on_{state['type']}_end",
         name=root_name,
@@ -995,7 +1166,10 @@ async def _astream_events_implementation_v2(
     exclude_tags: Sequence[str] | None = None,
     **kwargs: Any,
 ) -> AsyncIterator[StandardStreamEvent]:
-    """Implementation of the astream events API for V2 runnables."""
+    """Implementation of the astream events API for V2 runnables.
+
+    中文翻译:
+    为 V2 可运行对象实现 astream 事件 API。"""
     event_streamer = _AstreamEventsCallbackHandler(
         include_names=include_names,
         include_types=include_types,
@@ -1006,6 +1180,7 @@ async def _astream_events_implementation_v2(
     )
 
     # Assign the stream handler to the config
+    # 中文: 将流处理程序分配给配置
     config = ensure_config(config)
     if "run_id" in config:
         run_id = cast("UUID", config["run_id"])
@@ -1029,18 +1204,23 @@ async def _astream_events_implementation_v2(
         raise ValueError(msg)
 
     # Call the runnable in streaming mode,
+    # 中文: 以流模式调用可运行程序，
     # add each chunk to the output stream
+    # 中文: 将每个块添加到输出流
     async def consume_astream() -> None:
         try:
             # if astream also calls tap_output_aiter this will be a no-op
+            # 中文: 如果 astream 也调用 tap_output_aiter 这将是一个空操作
             async with aclosing(runnable.astream(value, config, **kwargs)) as stream:
                 async for _ in event_streamer.tap_output_aiter(run_id, stream):
                     # All the content will be picked up
+                    # 中文: 所有内容将被拾取
                     pass
         finally:
             await event_streamer.send_stream.aclose()
 
     # Start the runnable in a task, so we can start consuming output
+    # 中文: 在任务中启动可运行程序，以便我们可以开始使用输出
     task = asyncio.create_task(consume_astream())
 
     first_event_sent = False
@@ -1051,17 +1231,24 @@ async def _astream_events_implementation_v2(
             if not first_event_sent:
                 first_event_sent = True
                 # This is a work-around an issue where the inputs into the
+                # 中文: 这是一个解决问题的方法，其中输入
                 # chain are not available until the entire input is consumed.
+                # 中文: 在消耗整个输入之前，链不可用。
                 # As a temporary solution, we'll modify the input to be the input
+                # 中文: 作为临时解决方案，我们将输入修改为输入
                 # that was passed into the chain.
+                # 中文: 被传递到链中。
                 event["data"]["input"] = value
                 first_event_run_id = event["run_id"]
                 yield event
                 continue
 
             # If it's the end event corresponding to the root runnable
+            # 中文: 如果是根runnable对应的结束事件
             # we don't include the input in the event since it's guaranteed
+            # 中文: 我们不将输入包含在事件中，因为它是有保证的
             # to be included in the first event.
+            # 中文: 包含在第一个事件中。
             if (
                 event["run_id"] == first_event_run_id
                 and event["event"].endswith("_end")
@@ -1072,11 +1259,14 @@ async def _astream_events_implementation_v2(
             yield event
     except asyncio.CancelledError as exc:
         # Cancel the task if it's still running
+        # 中文: 如果任务仍在运行，则取消该任务
         task.cancel(exc.args[0] if exc.args else None)
         raise
     finally:
         # Cancel the task if it's still running
+        # 中文: 如果任务仍在运行，则取消该任务
         task.cancel()
         # Await it anyway, to run any cleanup code, and propagate any exceptions
+        # 中文: 无论如何都要等待，运行任何清理代码并传播任何异常
         with contextlib.suppress(asyncio.CancelledError):
             await task

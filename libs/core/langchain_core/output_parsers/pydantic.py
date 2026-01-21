@@ -1,4 +1,7 @@
-"""Output parsers using Pydantic."""
+"""Output parsers using Pydantic.
+
+中文翻译:
+使用 Pydantic 的输出解析器。"""
 
 import json
 from typing import Annotated, Generic, Literal, overload
@@ -17,10 +20,16 @@ from langchain_core.utils.pydantic import (
 
 
 class PydanticOutputParser(JsonOutputParser, Generic[TBaseModel]):
-    """Parse an output using a Pydantic model."""
+    """Parse an output using a Pydantic model.
+
+    中文翻译:
+    使用 Pydantic 模型解析输出。"""
 
     pydantic_object: Annotated[type[TBaseModel], SkipValidation()]
-    """The Pydantic model to parse."""
+    """The Pydantic model to parse.
+
+    中文翻译:
+    要解析的 Pydantic 模型。"""
 
     def _parse_obj(self, obj: dict) -> TBaseModel:
         try:
@@ -69,7 +78,20 @@ class PydanticOutputParser(JsonOutputParser, Generic[TBaseModel]):
 
         Returns:
             The parsed Pydantic object.
-        """
+        
+
+        中文翻译:
+        解析对 Pydantic 对象的 LLM 调用的结果。
+        参数：
+            结果：LLM 调用的结果。
+            partial：是否解析部分JSON对象。
+                如果为 True，输出将是一个 JSON 对象，其中包含
+                到目前为止已归还的所有钥匙。
+        加薪：
+            OutputParserException：如果结果不是有效的 JSON
+                或者不符合 Pydantic 模型。
+        返回：
+            解析后的 Pydantic 对象。"""
         try:
             json_object = super().parse_result(result)
             return self._parse_obj(json_object)
@@ -86,7 +108,14 @@ class PydanticOutputParser(JsonOutputParser, Generic[TBaseModel]):
 
         Returns:
             The parsed Pydantic object.
-        """
+        
+
+        中文翻译:
+        解析对 Pydantic 对象的 LLM 调用的输出。
+        参数：
+            文本：LLM 调用的输出。
+        返回：
+            解析后的 Pydantic 对象。"""
         return self.parse_result([Generation(text=text)])
 
     def get_format_instructions(self) -> str:
@@ -94,17 +123,25 @@ class PydanticOutputParser(JsonOutputParser, Generic[TBaseModel]):
 
         Returns:
             The format instructions for the JSON output.
-        """
+        
+
+        中文翻译:
+        返回 JSON 输出的格式说明。
+        返回：
+            JSON 输出的格式说明。"""
         # Copy schema to avoid altering original Pydantic schema.
+        # 中文: 复制架构以避免更改原始 Pydantic 架构。
         schema = dict(self._get_schema(self.pydantic_object).items())
 
         # Remove extraneous fields.
+        # 中文: 删除无关字段。
         reduced_schema = schema
         if "title" in reduced_schema:
             del reduced_schema["title"]
         if "type" in reduced_schema:
             del reduced_schema["type"]
         # Ensure json in context is well-formed with double quotes.
+        # 中文: 确保上下文中的 json 格式正确并带有双引号。
         schema_str = json.dumps(reduced_schema, ensure_ascii=False)
 
         return _PYDANTIC_FORMAT_INSTRUCTIONS.format(schema=schema_str)
@@ -116,7 +153,10 @@ class PydanticOutputParser(JsonOutputParser, Generic[TBaseModel]):
     @property
     @override
     def OutputType(self) -> type[TBaseModel]:
-        """Return the Pydantic model."""
+        """Return the Pydantic model.
+
+        中文翻译:
+        返回 Pydantic 模型。"""
         return self.pydantic_object
 
 
@@ -128,9 +168,19 @@ the object {{"foo": ["bar", "baz"]}} is a well-formatted instance of the schema.
 Here is the output schema:
 ```
 {schema}
-```"""  # noqa: E501
+```
+
+ 中文翻译:
+ 输出应格式化为符合以下 JSON 架构的 JSON 实例。
+例如，对于模式 {{"properties": {{"foo": {{"title": "Foo", "description": "a list of strings", "type": "array", "items": {{"type": "string"}}}}}}, "required": ["foo"]}}
+对象 {{"foo": ["bar", "baz"]}} 是模式的格式良好的实例。对象 {{"properties": {{"foo": ["bar", "baz"]}}}} 格式不正确。
+这是输出架构：
+````
+{模式}
+````"""  # noqa: E501
 
 # Re-exporting types for backwards compatibility
+# 中文: 重新导出类型以实现向后兼容性
 __all__ = [
     "PydanticBaseModel",
     "PydanticOutputParser",

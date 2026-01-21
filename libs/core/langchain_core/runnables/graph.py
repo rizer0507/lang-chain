@@ -1,4 +1,39 @@
-"""Graph used in Runnables."""
+"""Runnables 图形表示模块。
+
+本模块提供 Runnable 链的图形化表示功能。
+
+核心类:
+--------
+**Graph**: 节点和边的图结构
+**Node**: 图中的节点
+**Edge**: 图中的边
+
+可视化方法:
+-----------
+- `draw_ascii()`: ASCII 文本图形
+- `draw_png()`: PNG 图像（需要 graphviz）
+- `draw_mermaid()`: Mermaid 语法
+- `draw_mermaid_png()`: 通过 Mermaid 生成 PNG
+
+使用示例:
+---------
+>>> from langchain_core.prompts import ChatPromptTemplate
+>>> from langchain_openai import ChatOpenAI
+>>>
+>>> chain = ChatPromptTemplate.from_template("...") | ChatOpenAI()
+>>>
+>>> # 获取图形
+>>> graph = chain.get_graph()
+>>>
+>>> # ASCII 输出
+>>> print(graph.draw_ascii())
+>>>
+>>> # Mermaid 语法
+>>> print(graph.draw_mermaid())
+>>>
+>>> # 保存为 PNG
+>>> graph.draw_png("chain.png")
+"""
 
 from __future__ import annotations
 

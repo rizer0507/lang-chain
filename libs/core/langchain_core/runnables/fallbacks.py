@@ -1,4 +1,29 @@
-"""Runnable that can fallback to other Runnables if it fails."""
+"""可回退到其他 Runnable 的 Runnable 模块。
+
+本模块提供 `RunnableWithFallbacks`，用于处理 API 降级或故障时的回退逻辑。
+
+核心概念:
+---------
+当主 Runnable 失败时，自动尝试回退 Runnable。
+这对于处理外部 API（如语言模型）的暂时性故障非常有用。
+
+使用场景:
+---------
+1. LLM 提供商故障时切换到备用提供商
+2. API 速率限制时使用缓存响应
+3. 复杂操作失败时提供简单的默认响应
+
+使用示例:
+---------
+>>> from langchain_openai import ChatOpenAI
+>>> from langchain_anthropic import ChatAnthropic
+>>>
+>>> # 主模型是 OpenAI，备用模型是 Anthropic
+>>> model = ChatOpenAI().with_fallbacks([ChatAnthropic()])
+>>>
+>>> # 如果 OpenAI 失败，自动切换到 Anthropic
+>>> model.invoke("你好")
+"""
 
 import asyncio
 import inspect
@@ -34,51 +59,52 @@ if TYPE_CHECKING:
 
 
 class RunnableWithFallbacks(RunnableSerializable[Input, Output]):
-    """`Runnable` that can fallback to other `Runnable`s if it fails.
+    """失败时可以回退到其他 Runnable 的 Runnable。
 
-    External APIs (e.g., APIs for a language model) may at times experience
-    degraded performance or even downtime.
+    外部 API（如语言模型 API）有时可能会性能下降甚至完全不可用。
 
-    In these cases, it can be useful to have a fallback `Runnable` that can be
-    used in place of the original `Runnable` (e.g., fallback to another LLM provider).
+    在这些情况下，拥有一个可以替代原始 Runnable 的回退 Runnable 是很有用的
+    （例如，回退到另一个 LLM 提供商）。
 
-    Fallbacks can be defined at the level of a single `Runnable`, or at the level
-    of a chain of `Runnable`s. Fallbacks are tried in order until one succeeds or
-    all fail.
+    特性:
+    -----
+    1. 回退按顺序尝试，直到一个成功或全部失败
+    2. 可以在单个 Runnable 级别或整个链级别定义回退
+    3. 可以指定要处理的异常类型
+    4. 可以将异常信息传递给回退 Runnable
 
-    While you can instantiate a `RunnableWithFallbacks` directly, it is usually
-    more convenient to use the `with_fallbacks` method on a `Runnable`.
+    属性:
+    -----
+    runnable : Runnable
+        首先运行的 Runnable
+    fallbacks : Sequence[Runnable]
+        回退 Runnable 序列
+    exceptions_to_handle : tuple[type[BaseException], ...]
+        触发回退的异常类型
+    exception_key : str | None
+        如果设置，将异常作为输入字典的一部分传递给回退
 
-    Example:
+    使用示例:
         ```python
-        from langchain_core.chat_models.openai import ChatOpenAI
-        from langchain_core.chat_models.anthropic import ChatAnthropic
+        from langchain_openai import ChatOpenAI
+        from langchain_anthropic import ChatAnthropic
 
-        model = ChatAnthropic(model="claude-3-haiku-20240307").with_fallbacks(
-            [ChatOpenAI(model="gpt-3.5-turbo-0125")]
+        model = ChatAnthropic(model="claude-3-haiku").with_fallbacks(
+            [ChatOpenAI(model="gpt-3.5-turbo")]
         )
-        # Will usually use ChatAnthropic, but fallback to ChatOpenAI
-        # if ChatAnthropic fails.
-        model.invoke("hello")
+        # 通常使用 ChatAnthropic，但如果失败则回退到 ChatOpenAI
+        model.invoke("你好")
 
-        # And you can also use fallbacks at the level of a chain.
-        # Here if both LLM providers fail, we'll fallback to a good hardcoded
-        # response.
-
+        # 也可以在链级别使用回退
         from langchain_core.prompts import PromptTemplate
-        from langchain_core.output_parser import StrOutputParser
+        from langchain_core.output_parsers import StrOutputParser
         from langchain_core.runnables import RunnableLambda
 
-
         def when_all_is_lost(inputs):
-            return (
-                "Looks like our LLM providers are down. "
-                "Here's a nice 🦜️ emoji for you instead."
-            )
-
+            return "看起来 LLM 提供商都挂了。这是一个 🦜️ 表情符号。"
 
         chain_with_fallback = (
-            PromptTemplate.from_template("Tell me a joke about {topic}")
+            PromptTemplate.from_template("讲一个关于{topic}的笑话")
             | model
             | StrOutputParser()
         ).with_fallbacks([RunnableLambda(when_all_is_lost)])

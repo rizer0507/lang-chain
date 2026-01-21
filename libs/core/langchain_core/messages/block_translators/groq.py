@@ -1,4 +1,7 @@
-"""Derivations of standard content blocks from Groq content."""
+"""Derivations of standard content blocks from Groq content.
+
+中文翻译:
+从 Groq 内容衍生出标准内容块。"""
 
 import json
 import re
@@ -12,7 +15,10 @@ from langchain_core.messages.base import _extract_reasoning_from_additional_kwar
 def _populate_extras(
     standard_block: types.ContentBlock, block: dict[str, Any], known_fields: set[str]
 ) -> types.ContentBlock:
-    """Mutate a block, populating extras."""
+    """Mutate a block, populating extras.
+
+    中文翻译:
+    改变一个块，填充额外的东西。"""
     if standard_block.get("type") == "non_standard":
         return standard_block
 
@@ -20,7 +26,9 @@ def _populate_extras(
         if key not in known_fields:
             if "extras" not in standard_block:
                 # Below type-ignores are because mypy thinks a non-standard block can
+                # 中文: 下面的类型忽略是因为 mypy 认为非标准块可以
                 # get here, although we exclude them above.
+                # 中文: 到达这里，尽管我们在上面排除了它们。
                 standard_block["extras"] = {}  # type: ignore[typeddict-unknown-key]
             standard_block["extras"][key] = value  # type: ignore[typeddict-item]
 
@@ -37,7 +45,16 @@ def _parse_code_json(s: str) -> dict:
     ```
     '{"code": "import math; print("The square root of 101 is: "); print(math.sqrt(101))"}'
     ```
-    """  # noqa: E501
+    
+
+    中文翻译:
+    从 Groq 内置工具内容中提取 Python 代码。
+    从以下形式的字符串中提取“code”字段的值：
+    {“代码”：some_任意_文本_with_unescaped_quotes}
+    由于 Groq 可能无法在执行的工具中转义引号，例如：
+    ````
+    '{"code": "import math; print("101 的平方根是："); print(math.sqrt(101))"}'
+    ````"""  # noqa: E501
     m = re.fullmatch(r'\s*\{\s*"code"\s*:\s*"(.*)"\s*\}\s*', s, flags=re.DOTALL)
     if not m:
         msg = (
@@ -49,7 +66,10 @@ def _parse_code_json(s: str) -> dict:
 
 
 def _convert_to_v1_from_groq(message: AIMessage) -> list[types.ContentBlock]:
-    """Convert groq message content to v1 format."""
+    """Convert groq message content to v1 format.
+
+    中文翻译:
+    将 groq 消息内容转换为 v1 格式。"""
     content_blocks: list[types.ContentBlock] = []
 
     if reasoning_block := _extract_reasoning_from_additional_kwargs(message):
@@ -72,6 +92,7 @@ def _convert_to_v1_from_groq(message: AIMessage) -> list[types.ContentBlock]:
                         and executed_tool.get("name") == "python"
                     ):
                         # GPT-OSS
+                        # 中文: GPT-美国
                         args = {"code": arguments}
                     else:
                         continue
@@ -126,7 +147,14 @@ def translate_content(message: AIMessage) -> list[types.ContentBlock]:
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从具有 groq 内容的消息中派生标准内容块。
+    参数：
+        message：要翻译的消息。
+    返回：
+        派生的内容块。"""
     return _convert_to_v1_from_groq(message)
 
 
@@ -138,7 +166,14 @@ def translate_content_chunk(message: AIMessageChunk) -> list[types.ContentBlock]
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从具有 groq 内容的消息块中派生标准内容块。
+    参数：
+        message：要翻译的消息块。
+    返回：
+        派生的内容块。"""
     return _convert_to_v1_from_groq(message)
 
 
@@ -146,7 +181,11 @@ def _register_groq_translator() -> None:
     """Register the groq translator with the central registry.
 
     Run automatically when the module is imported.
-    """
+    
+
+    中文翻译:
+    向中央注册表注册 groq 翻译器。
+    导入模块时自动运行。"""
     from langchain_core.messages.block_translators import (  # noqa: PLC0415
         register_translator,
     )

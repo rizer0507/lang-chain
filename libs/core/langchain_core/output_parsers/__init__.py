@@ -14,6 +14,20 @@
     Output parsers remain valuable when working with models that do not support
     structured output natively, or when you require additional processing or validation
     of the model's output beyond its inherent capabilities.
+
+中文翻译:
+“OutputParser”类将 LLM 调用的输出解析为结构化数据。
+！！！提示“结构化输出”
+    输出解析器是作为获取结构化挑战的早期解决方案而出现的
+    法学硕士的输出。
+    如今，大多数法学硕士都支持[结构化输出](https://docs.langchain.com/oss/python/langchain/models#structed-outputs)
+    原生地。在这种情况下，可能不需要使用输出解析器，您应该
+    利用模型的内置功能进行结构化输出。请参阅
+    [您选择的模型的文档](https://docs.langchain.com/oss/python/integrations/providers/overview)
+    有关如何直接实现结构化输出的指导。
+    当使用不支持的模型时，输出解析器仍然很有价值
+    本机结构化输出，或者当您需要额外处理或验证时
+    模型的输出超出了其固有的能力。
 """
 
 from typing import TYPE_CHECKING

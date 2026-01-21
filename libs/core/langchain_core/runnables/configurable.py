@@ -1,4 +1,44 @@
-"""`Runnable` objects that can be dynamically configured."""
+"""可动态配置的 Runnable 对象模块。
+
+本模块提供在运行时动态配置 Runnable 的能力。
+
+核心类:
+--------
+**DynamicRunnable**: 可动态配置的 Runnable 基类
+**RunnableConfigurableFields**: 允许配置特定字段的 Runnable
+**RunnableConfigurableAlternatives**: 允许在多个替代方案之间切换的 Runnable
+
+使用场景:
+---------
+1. 运行时更改 LLM 的温度等参数
+2. 在不同的 LLM 提供商之间切换
+3. 动态选择不同的提示模板
+
+使用示例:
+---------
+>>> from langchain_openai import ChatOpenAI
+>>> from langchain_core.runnables import ConfigurableField
+>>>
+>>> # 使字段可配置
+>>> model = ChatOpenAI().configurable_fields(
+...     temperature=ConfigurableField(
+...         id="llm_temperature",
+...         name="温度",
+...         description="控制输出的随机性",
+...     )
+... )
+>>>
+>>> # 配置替代方案
+>>> from langchain_anthropic import ChatAnthropic
+>>> model = ChatOpenAI().configurable_alternatives(
+...     ConfigurableField(id="llm"),
+...     default_key="openai",
+...     anthropic=ChatAnthropic(),
+... )
+>>>
+>>> # 运行时选择
+>>> model.with_config(configurable={"llm": "anthropic"}).invoke("你好")
+"""
 
 from __future__ import annotations
 
@@ -47,10 +87,12 @@ if TYPE_CHECKING:
 
 
 class DynamicRunnable(RunnableSerializable[Input, Output]):
-    """Serializable `Runnable` that can be dynamically configured.
+    """可动态配置的可序列化 Runnable。
 
-    A `DynamicRunnable` should be initiated using the `configurable_fields` or
-    `configurable_alternatives` method of a `Runnable`.
+    `DynamicRunnable` 应通过 `Runnable` 的 `configurable_fields` 或
+    `configurable_alternatives` 方法来初始化。
+
+    这是配置系统的基类，提供了动态准备和执行的能力。
     """
 
     default: RunnableSerializable[Input, Output]

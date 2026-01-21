@@ -1,4 +1,7 @@
-"""A tracer that runs evaluators over completed runs."""
+"""A tracer that runs evaluators over completed runs.
+
+中文翻译:
+在已完成的运行中运行评估器的跟踪器。"""
 
 from __future__ import annotations
 
@@ -29,7 +32,10 @@ _TRACERS: weakref.WeakSet[EvaluatorCallbackHandler] = weakref.WeakSet()
 
 
 def wait_for_all_evaluators() -> None:
-    """Wait for all tracers to finish."""
+    """Wait for all tracers to finish.
+
+    中文翻译:
+    等待所有跟踪器完成。"""
     for tracer in list(_TRACERS):
         if tracer is not None:
             tracer.wait_for_futures()
@@ -41,23 +47,50 @@ class EvaluatorCallbackHandler(BaseTracer):
     Attributes:
         client : Client
             The LangSmith client instance used for evaluating the runs.
-    """
+    
+
+    中文翻译:
+    每当运行持续时运行运行评估器的跟踪器。
+    属性：
+        客户：客户
+            用于评估运行的 LangSmith 客户端实例。"""
 
     name: str = "evaluator_callback_handler"
     example_id: UUID | None = None
-    """The example ID associated with the runs."""
+    """The example ID associated with the runs.
+
+    中文翻译:
+    与运行关联的示例 ID。"""
     client: langsmith.Client
-    """The LangSmith client instance used for evaluating the runs."""
+    """The LangSmith client instance used for evaluating the runs.
+
+    中文翻译:
+    用于评估运行的 LangSmith 客户端实例。"""
     evaluators: Sequence[langsmith.RunEvaluator] = ()
-    """The sequence of run evaluators to be executed."""
+    """The sequence of run evaluators to be executed.
+
+    中文翻译:
+    要执行的运行评估器的顺序。"""
     executor: ThreadPoolExecutor | None = None
-    """The thread pool executor used for running the evaluators."""
+    """The thread pool executor used for running the evaluators.
+
+    中文翻译:
+    用于运行评估器的线程池执行器。"""
     futures: weakref.WeakSet[Future] = weakref.WeakSet()
-    """The set of futures representing the running evaluators."""
+    """The set of futures representing the running evaluators.
+
+    中文翻译:
+    代表正在运行的评估者的 future 集合。"""
     skip_unfinished: bool = True
-    """Whether to skip runs that are not finished or raised an error."""
+    """Whether to skip runs that are not finished or raised an error.
+
+    中文翻译:
+    是否跳过未完成或引发错误的运行。"""
     project_name: str | None = None
-    """The LangSmith project name to be organize eval chain runs under."""
+    """The LangSmith project name to be organize eval chain runs under.
+
+    中文翻译:
+    将在 LangSmith 项目名称下组织 eval 链运行。"""
     logged_eval_results: dict[tuple[str, str], list[EvaluationResult]]
     lock: threading.Lock
 
@@ -87,7 +120,24 @@ class EvaluatorCallbackHandler(BaseTracer):
                 The LangSmith project name to be organize eval chain runs under.
             max_concurrency : int, optional
                 The maximum number of concurrent evaluators to run.
-        """
+        
+
+        中文翻译:
+        创建一个 EvaluatorCallbackHandler。
+        参数：
+            评估器：序列[RunEvaluator]
+                运行评估器适用于所有顶级运行。
+            客户端：LangSmith 客户端，可选
+                用于评估运行的 LangSmith 客户端实例。
+                如果未指定，将创建一个新实例。
+            example_id : Union[UUID, str]，可选
+                与运行关联的示例 ID。
+            Skip_unfinished：布尔值，可选
+                是否跳过未完成的运行。
+            项目名称：str，可选
+                将在 LangSmith 项目名称下组织 eval 链运行。
+            max_concurrency : int, 可选
+                要运行的并发评估程序的最大数量。"""
         super().__init__(**kwargs)
         self.example_id = (
             UUID(example_id) if isinstance(example_id, str) else example_id
@@ -117,7 +167,13 @@ class EvaluatorCallbackHandler(BaseTracer):
         Args:
             run: The run to be evaluated.
             evaluator: The evaluator to use for evaluating the run.
-        """
+        
+
+        中文翻译:
+        评估项目的运行情况。
+        参数：
+            run：要评估的运行。
+            evaluator：用于评估运行的评估器。"""
         try:
             if self.project_name is None:
                 eval_result = self.client.evaluate_run(run, evaluator)
@@ -132,6 +188,7 @@ class EvaluatorCallbackHandler(BaseTracer):
                 )
                 evaluation_result = evaluator.evaluate_run(
                     # This is subclass, but getting errors for some reason
+                    # 中文: 这是子类，但由于某种原因出现错误
                     run,  # type: ignore[arg-type]
                     example=reference_example,
                 )
@@ -203,7 +260,12 @@ class EvaluatorCallbackHandler(BaseTracer):
 
         Args:
             run: The run to be evaluated.
-        """
+        
+
+        中文翻译:
+        在运行时运行评估器。
+        参数：
+            run：要评估的运行。"""
         if self.skip_unfinished and not run.outputs:
             logger.debug("Skipping unfinished run %s", run.id)
             return
@@ -218,5 +280,8 @@ class EvaluatorCallbackHandler(BaseTracer):
                 )
 
     def wait_for_futures(self) -> None:
-        """Wait for all futures to complete."""
+        """Wait for all futures to complete.
+
+        中文翻译:
+        等待所有 future 完成。"""
         wait(self.futures)

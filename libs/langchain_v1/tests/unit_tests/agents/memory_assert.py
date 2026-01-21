@@ -39,6 +39,7 @@ class MemorySaverAssertImmutable(InMemorySaver):
         if self.put_sleep:
             time.sleep(self.put_sleep)
         # assert checkpoint hasn't been modified since last written
+        # 中文: 断言检查点自上次写入以来尚未修改
         thread_id = config["configurable"]["thread_id"]
         checkpoint_ns = config["configurable"]["checkpoint_ns"]
         if saved := super().get(config):
@@ -52,4 +53,5 @@ class MemorySaverAssertImmutable(InMemorySaver):
             self.serde.dumps_typed(copy_checkpoint(checkpoint))
         )
         # call super to write checkpoint
+        # 中文: 调用 super 写入检查点
         return super().put(config, checkpoint, metadata, new_versions)

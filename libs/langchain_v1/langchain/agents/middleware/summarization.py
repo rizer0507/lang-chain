@@ -1,4 +1,41 @@
-"""Summarization middleware."""
+"""对话摘要中间件模块。
+
+本模块提供对话历史过长时自动摘要的能力，保持上下文连续性。
+
+核心类:
+--------
+**SummarizationMiddleware**: 对话摘要中间件
+
+功能特性:
+---------
+- 监控消息 token 数量
+- 达到阈值时自动摘要旧消息
+- 保留最近的消息
+- 确保 AI/Tool 消息对不被拆分
+
+上下文大小配置:
+---------------
+- `("fraction", 0.5)`: 模型最大输入 token 的百分比
+- `("tokens", 3000)`: 绝对 token 数量
+- `("messages", 50)`: 绝对消息数量
+
+使用示例:
+---------
+>>> from langchain.agents import create_agent
+>>> from langchain.agents.middleware import SummarizationMiddleware
+>>>
+>>> # 当达到 50 条消息时触发摘要，保留最近 20 条
+>>> summarizer = SummarizationMiddleware(
+...     model="openai:gpt-4o-mini",
+...     trigger=("messages", 50),
+...     keep=("messages", 20),
+... )
+>>>
+>>> agent = create_agent(
+...     model="openai:gpt-4o",
+...     middleware=[summarizer],
+... )
+"""
 
 import uuid
 import warnings
@@ -55,7 +92,30 @@ Respond ONLY with the extracted context. Do not include any additional informati
 <messages>
 Messages to summarize:
 {messages}
-</messages>"""  # noqa: E501
+</messages>
+
+ 中文翻译:
+ <角色>
+上下文提取助手
+</角色>
+<主要目标>
+您在此任务中的唯一目标是从下面的对话历史记录中提取最高质量/最相关的上下文。
+</主要目标>
+<目标信息>
+您已接近可以接受的输入令牌总数，因此您必须从对话历史记录中提取最高质量/最相关的信息。
+然后，此上下文将覆盖下面显示的对话历史记录。因此，请确保您提取的上下文只是对您的总体目标最重要的信息。
+</目标信息>
+<说明>
+下面的对话历史记录将替换为您在此步骤中提取的上下文。因此，您必须尽最大努力从对话历史记录中提取并记录所有最重要的上下文。
+您希望确保不会重复已完成的任何操作，因此从对话历史记录中提取的上下文应集中于对您的总体目标最重要的信息。
+</说明>
+用户将向您发送消息，其中包含您将从中提取上下文的完整消息历史记录，然后进行替换。仔细阅读所有内容，并深入思考哪些信息对您的总体目标最重要，应该保存：
+考虑到所有这些，请仔细阅读整个对话历史记录，并提取最重要且相关的上下文来替换它，以便您可以释放对话历史记录中的空间。
+仅使用提取的上下文进行响应。不要在提取的上下文之前或之后包含任何附加信息或文本。
+<消息>
+消息总结：
+{消息}
+</消息>"""  # noqa: E501
 
 _DEFAULT_MESSAGES_TO_KEEP = 20
 _DEFAULT_TRIM_TOKEN_LIMIT = 4000
@@ -70,6 +130,14 @@ Example:
     ```python
     ("fraction", 0.5)
     ```
+
+中文翻译:
+模型最大输入标记的分数。
+示例：
+    要指定模型最大输入标记的 50%：
+    ````蟒蛇
+    （“分数”，0.5）
+    ````
 """
 
 ContextTokens = tuple[Literal["tokens"], int]
@@ -81,6 +149,14 @@ Example:
     ```python
     ("tokens", 3000)
     ```
+
+中文翻译:
+代币的绝对数量。
+示例：
+    要指定 3000 个令牌：
+    ````蟒蛇
+    （“代币”，3000）
+    ````
 """
 
 ContextMessages = tuple[Literal["messages"], int]
@@ -92,6 +168,14 @@ Example:
     ```python
     ("messages", 50)
     ```
+
+中文翻译:
+消息的绝对数量。
+示例：
+    要指定 50 条消息：
+    ````蟒蛇
+    （“消息”，50）
+    ````
 """
 
 ContextSize = ContextFraction | ContextTokens | ContextMessages
@@ -112,22 +196,51 @@ when to trigger summarization or how much context to retain.
 Example:
     ```python
     # ContextFraction
+    # 中文: 上下文分数
     context_size: ContextSize = ("fraction", 0.5)
 
     # ContextTokens
+    # 中文: 上下文令牌
     context_size: ContextSize = ("tokens", 3000)
 
     # ContextMessages
+    # 中文: 上下文消息
     context_size: ContextSize = ("messages", 50)
     ```
+
+中文翻译:
+上下文大小规范的联合类型。
+可以是：
+- [`ContextFraction`][langchain.agents.middleware.summarization.ContextFraction]：A
+    模型最大输入标记的分数。
+- [`ContextTokens`][langchain.agents.middleware.summarization.ContextTokens]：绝对值
+    代币数量。
+- [`ContextMessages`][langchain.agents.middleware.summarization.ContextMessages]：一个
+    消息的绝对数量。
+根据与“trigger”或“keep”参数的使用，此类型指示
+何时触发摘要或保留多少上下文。
+示例：
+    ````蟒蛇
+    # 上下文分数
+    context_size: ContextSize = ("分数", 0.5)
+    # 上下文令牌
+    context_size: ContextSize = ("令牌", 3000)
+    # 上下文消息
+    context_size: ContextSize = ("消息", 50)
+    ````
 """
 
 
 def _get_approximate_token_counter(model: BaseChatModel) -> TokenCounter:
-    """Tune parameters of approximate token counter based on model type."""
+    """Tune parameters of approximate token counter based on model type.
+
+    中文翻译:
+    根据模型类型调整近似令牌计数器的参数。"""
     if model._llm_type == "anthropic-chat":  # noqa: SLF001
         # 3.3 was estimated in an offline experiment, comparing with Claude's token-counting
+        # 中文: 3.3 离线实验中估计的，与 Claude 的 token-counting 进行比较
         # API: https://platform.claude.com/docs/en/build-with-claude/token-counting
+        # 中文: API：https://platform.claude.com/docs/en/build-with-claude/token-counting
         return partial(count_tokens_approximately, chars_per_token=3.3)
     return count_tokens_approximately
 
@@ -138,7 +251,13 @@ class SummarizationMiddleware(AgentMiddleware):
     This middleware monitors message token counts and automatically summarizes older
     messages when a threshold is reached, preserving recent messages and maintaining
     context continuity by ensuring AI/Tool message pairs remain together.
-    """
+    
+
+    中文翻译:
+    当达到令牌限制时总结对话历史记录。
+    该中间件监视消息令牌计数并自动总结旧的
+    达到阈值时发送消息，保留最近的消息并维护
+    通过确保 AI/工具消息对保持在一起来实现上下文连续性。"""
 
     def __init__(
         self,
@@ -166,13 +285,17 @@ class SummarizationMiddleware(AgentMiddleware):
 
                     ```python
                     # Trigger summarization when 50 messages is reached
+                    # 中文: 当达到50条消息时触发汇总
                     ("messages", 50)
 
                     # Trigger summarization when 3000 tokens is reached
+                    # 中文: 当达到3000个token时触发汇总
                     ("tokens", 3000)
 
                     # Trigger summarization either when 80% of model's max input tokens
+                    # 中文: 当模型最大输入标记的 80% 时触发汇总
                     # is reached or when 100 messages is reached (whichever comes first)
+                    # 中文: 已达到或达到 100 条消息时（以先到者为准）
                     [("fraction", 0.8), ("messages", 100)]
                     ```
 
@@ -191,12 +314,15 @@ class SummarizationMiddleware(AgentMiddleware):
 
                     ```python
                     # Keep the most recent 20 messages
+                    # 中文: 保留最近20条消息
                     ("messages", 20)
 
                     # Keep the most recent 3000 tokens
+                    # 中文: 保留最近的3000个代币
                     ("tokens", 3000)
 
                     # Keep the most recent 30% of the model's max input tokens
+                    # 中文: 保留模型最大输入令牌的最新 30%
                     ("fraction", 0.3)
                     ```
             token_counter: Function to count tokens in messages.
@@ -205,8 +331,50 @@ class SummarizationMiddleware(AgentMiddleware):
                 the summarization call.
 
                 Pass `None` to skip trimming entirely.
-        """
+        
+
+        中文翻译:
+        初始化摘要中间件。
+        参数：
+            model：用于生成摘要的语言模型。
+            触发：触发汇总的一个或多个阈值。
+                提供单
+                [`ContextSize`][langchain.agents.middleware.summarization.ContextSize]
+                元组或元组列表，在这种情况下，当任何
+                达到阈值。
+                !!!例子
+                    ````蟒蛇
+                    # 当达到50条消息时触发汇总
+                    （“消息”，50）
+                    # 当达到3000个token时触发汇总
+                    （“代币”，3000）
+                    # 当模型最大输入标记的 80% 时触发摘要
+                    # 达到或达到 100 条消息时（以先到者为准）
+                    [(“分数”，0.8)，(“消息”，100)]
+                    ````
+                    请参阅[`ContextSize`][langchain.agents.middleware.summarization.ContextSize]
+                    了解更多详情。
+            keep：汇总后应用上下文保留策略。
+                提供 [`ContextSize`][langchain.agents.middleware.summarization.ContextSize]
+                元组指定要保留多少历史记录。
+                默认保留最近的“20”消息。
+                不支持“trigger”等多个值。
+                !!!例子
+                    ````蟒蛇
+                    # 保留最近20条消息
+                    （“消息”，20）
+                    # 保留最近的3000个代币
+                    （“代币”，3000）
+                    # 保留模型最大输入标记的最新 30%
+                    （“分数”，0.3）
+                    ````
+            token_counter：计算消息中令牌的函数。
+            Summary_prompt：生成摘要的提示模板。
+            trim_tokens_to_summarize：准备消息时保留的最大令牌数
+                总结调用。
+                传递“None”以完全跳过修剪。"""
         # Handle deprecated parameters
+        # 中文: 处理已弃用的参数
         if "max_tokens_before_summary" in deprecated_kwargs:
             value = deprecated_kwargs["max_tokens_before_summary"]
             warnings.warn(
@@ -269,7 +437,10 @@ class SummarizationMiddleware(AgentMiddleware):
 
     @override
     def before_model(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
-        """Process messages before model invocation, potentially triggering summarization."""
+        """Process messages before model invocation, potentially triggering summarization.
+
+        中文翻译:
+        在模型调用之前处理消息，可能会触发摘要。"""
         messages = state["messages"]
         self._ensure_message_ids(messages)
 
@@ -297,7 +468,10 @@ class SummarizationMiddleware(AgentMiddleware):
 
     @override
     async def abefore_model(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
-        """Process messages before model invocation, potentially triggering summarization."""
+        """Process messages before model invocation, potentially triggering summarization.
+
+        中文翻译:
+        在模型调用之前处理消息，可能会触发摘要。"""
         messages = state["messages"]
         self._ensure_message_ids(messages)
 
@@ -324,7 +498,10 @@ class SummarizationMiddleware(AgentMiddleware):
         }
 
     def _should_summarize(self, messages: list[AnyMessage], total_tokens: int) -> bool:
-        """Determine whether summarization should run for the current token usage."""
+        """Determine whether summarization should run for the current token usage.
+
+        中文翻译:
+        确定是否应针对当前令牌使用情况运行汇总。"""
         if not self._trigger_conditions:
             return False
 
@@ -345,19 +522,27 @@ class SummarizationMiddleware(AgentMiddleware):
         return False
 
     def _determine_cutoff_index(self, messages: list[AnyMessage]) -> int:
-        """Choose cutoff index respecting retention configuration."""
+        """Choose cutoff index respecting retention configuration.
+
+        中文翻译:
+        选择尊重保留配置的截止索引。"""
         kind, value = self.keep
         if kind in {"tokens", "fraction"}:
             token_based_cutoff = self._find_token_based_cutoff(messages)
             if token_based_cutoff is not None:
                 return token_based_cutoff
             # None cutoff -> model profile data not available (caught in __init__ but
+            # 中文: 无截止 -> 模型配置文件数据不可用（在 __init__ 中捕获，但
             # here for safety), fallback to message count
+            # 中文: 为了安全起见），回退到消息计数
             return self._find_safe_cutoff(messages, _DEFAULT_MESSAGES_TO_KEEP)
         return self._find_safe_cutoff(messages, cast("int", value))
 
     def _find_token_based_cutoff(self, messages: list[AnyMessage]) -> int | None:
-        """Find cutoff index based on target token retention."""
+        """Find cutoff index based on target token retention.
+
+        中文翻译:
+        根据目标令牌保留找到截止索引。"""
         if not messages:
             return 0
 
@@ -379,7 +564,9 @@ class SummarizationMiddleware(AgentMiddleware):
             return 0
 
         # Use binary search to identify the earliest message index that keeps the
+        # 中文: 使用二分查找来确定保留该消息的最早的消息索引
         # suffix within the token budget.
+        # 中文: 代币预算内的后缀。
         left, right = 0, len(messages)
         cutoff_candidate = len(messages)
         max_iterations = len(messages).bit_length() + 1
@@ -403,10 +590,14 @@ class SummarizationMiddleware(AgentMiddleware):
             cutoff_candidate = len(messages) - 1
 
         # Advance past any ToolMessages to avoid splitting AI/Tool pairs
+        # 中文: 前进通过任何 ToolMessages 以避免分裂 AI/工具对
         return self._find_safe_cutoff_point(messages, cutoff_candidate)
 
     def _get_profile_limits(self) -> int | None:
-        """Retrieve max input token limit from the model profile."""
+        """Retrieve max input token limit from the model profile.
+
+        中文翻译:
+        从模型配置文件中检索最大输入令牌限制。"""
         try:
             profile = self.model.profile
         except AttributeError:
@@ -423,7 +614,10 @@ class SummarizationMiddleware(AgentMiddleware):
         return max_input_tokens
 
     def _validate_context_size(self, context: ContextSize, parameter_name: str) -> ContextSize:
-        """Validate context configuration tuples."""
+        """Validate context configuration tuples.
+
+        中文翻译:
+        验证上下文配置元组。"""
         kind, value = context
         if kind == "fraction":
             if not 0 < value <= 1:
@@ -444,7 +638,10 @@ class SummarizationMiddleware(AgentMiddleware):
         ]
 
     def _ensure_message_ids(self, messages: list[AnyMessage]) -> None:
-        """Ensure all messages have unique IDs for the add_messages reducer."""
+        """Ensure all messages have unique IDs for the add_messages reducer.
+
+        中文翻译:
+        确保所有消息都具有 add_messages 缩减程序的唯一 ID。"""
         for msg in messages:
             if msg.id is None:
                 msg.id = str(uuid.uuid4())
@@ -454,7 +651,10 @@ class SummarizationMiddleware(AgentMiddleware):
         conversation_messages: list[AnyMessage],
         cutoff_index: int,
     ) -> tuple[list[AnyMessage], list[AnyMessage]]:
-        """Partition messages into those to summarize and those to preserve."""
+        """Partition messages into those to summarize and those to preserve.
+
+        中文翻译:
+        将消息分为要总结的消息和要保留的消息。"""
         messages_to_summarize = conversation_messages[:cutoff_index]
         preserved_messages = conversation_messages[cutoff_index:]
 
@@ -468,7 +668,14 @@ class SummarizationMiddleware(AgentMiddleware):
 
         This is aggressive with summarization - if the target cutoff lands in the
         middle of tool messages, we advance past all of them (summarizing more).
-        """
+        
+
+        中文翻译:
+        找到保留 AI/工具消息对的安全截止点。
+        返回可以安全剪切消息而不分离的索引
+        相关AI和工具消息。如果未找到安全截止点，则返回“0”。
+        这是积极的总结 - 如果目标截止落在
+        在工具消息的中间，我们超越了所有这些（总结更多）。"""
         if len(messages) <= messages_to_keep:
             return 0
 
@@ -481,13 +688,22 @@ class SummarizationMiddleware(AgentMiddleware):
         If the message at cutoff_index is a ToolMessage, advance until we find
         a non-ToolMessage. This ensures we never cut in the middle of parallel
         tool call responses.
-        """
+        
+
+        中文翻译:
+        找到一个不会分裂 AI/工具消息对的安全截止点。
+        如果 cutoff_index 处的消息是 ToolMessage，则前进直到找到
+        非 ToolMessage。这确保了我们永远不会在平行的中间切割
+        工具调用响应。"""
         while cutoff_index < len(messages) and isinstance(messages[cutoff_index], ToolMessage):
             cutoff_index += 1
         return cutoff_index
 
     def _create_summary(self, messages_to_summarize: list[AnyMessage]) -> str:
-        """Generate summary for the given messages."""
+        """Generate summary for the given messages.
+
+        中文翻译:
+        生成给定消息的摘要。"""
         if not messages_to_summarize:
             return "No previous conversation history."
 
@@ -496,7 +712,9 @@ class SummarizationMiddleware(AgentMiddleware):
             return "Previous conversation was too long to summarize."
 
         # Format messages to avoid token inflation from metadata when str() is called on
+        # 中文: 格式化消息以避免调用 str() 时元数据中的令牌膨胀
         # message objects
+        # 中文: 消息对象
         formatted_messages = get_buffer_string(trimmed_messages)
 
         try:
@@ -506,7 +724,10 @@ class SummarizationMiddleware(AgentMiddleware):
             return f"Error generating summary: {e!s}"
 
     async def _acreate_summary(self, messages_to_summarize: list[AnyMessage]) -> str:
-        """Generate summary for the given messages."""
+        """Generate summary for the given messages.
+
+        中文翻译:
+        生成给定消息的摘要。"""
         if not messages_to_summarize:
             return "No previous conversation history."
 
@@ -515,7 +736,9 @@ class SummarizationMiddleware(AgentMiddleware):
             return "Previous conversation was too long to summarize."
 
         # Format messages to avoid token inflation from metadata when str() is called on
+        # 中文: 格式化消息以避免调用 str() 时元数据中的令牌膨胀
         # message objects
+        # 中文: 消息对象
         formatted_messages = get_buffer_string(trimmed_messages)
 
         try:
@@ -527,7 +750,10 @@ class SummarizationMiddleware(AgentMiddleware):
             return f"Error generating summary: {e!s}"
 
     def _trim_messages_for_summary(self, messages: list[AnyMessage]) -> list[AnyMessage]:
-        """Trim messages to fit within summary generation limits."""
+        """Trim messages to fit within summary generation limits.
+
+        中文翻译:
+        修剪消息以适应摘要生成限制。"""
         try:
             if self.trim_tokens_to_summarize is None:
                 return messages

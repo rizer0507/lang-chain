@@ -1,4 +1,7 @@
-"""String output parser."""
+"""String output parser.
+
+中文翻译:
+字符串输出解析器。"""
 
 from typing_extensions import override
 
@@ -23,16 +26,40 @@ class StrOutputParser(BaseTransformOutputParser[str]):
         parser = StrOutputParser()
 
         # Get string output from a model
+        # 中文: 从模型获取字符串输出
         message = model.invoke("Tell me a joke")
         result = parser.invoke(message)
         print(result)  # plain string
 
         # With streaming - use transform() to process a stream
+        # 中文: 使用流式传输 - 使用transform()来处理流
         stream = model.stream("Tell me a story")
         for chunk in parser.transform(stream):
             print(chunk, end="", flush=True)
         ```
-    """
+    
+
+    中文翻译:
+    从模型输出中提取文本内容作为字符串。
+    将模型输出（例如“AIMessage”或“AIMessageChunk”对象）转换为纯文本
+    文本字符串。它是最简单的输出解析器，当您需要字符串时非常有用
+    用于下游处理、显示或存储的响应。
+    支持流式传输，生成由模型生成的文本块。
+    示例：
+        ````蟒蛇
+        从 langchain_core.output_parsers 导入 StrOutputParser
+        从 langchain_openai 导入 ChatOpenAI
+        模型= ChatOpenAI(模型=“gpt-4o”)
+        解析器 = StrOutputParser()
+        # 从模型中获取字符串输出
+        message = model.invoke("给我讲个笑话")
+        结果 = parser.invoke(消息)
+        print(结果) # 纯字符串
+        # 使用流式传输 - 使用transform()来处理流
+        Stream = model.stream("给我讲个故事")
+        对于 parser.transform(stream) 中的块：
+            打印（块，结束=“”，刷新= True）
+        ````"""
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
@@ -40,7 +67,12 @@ class StrOutputParser(BaseTransformOutputParser[str]):
 
         Returns:
             `True`
-        """
+        
+
+        中文翻译:
+        `StrOutputParser` 是可序列化的。
+        返回：
+            '真实'"""
         return True
 
     @classmethod
@@ -49,15 +81,26 @@ class StrOutputParser(BaseTransformOutputParser[str]):
 
         Returns:
             `["langchain", "schema", "output_parser"]`
-        """
+        
+
+        中文翻译:
+        获取LangChain对象的命名空间。
+        返回：
+            `[“langchain”，“模式”，“output_parser”]`"""
         return ["langchain", "schema", "output_parser"]
 
     @property
     def _type(self) -> str:
-        """Return the output parser type for serialization."""
+        """Return the output parser type for serialization.
+
+        中文翻译:
+        返回用于序列化的输出解析器类型。"""
         return "default"
 
     @override
     def parse(self, text: str) -> str:
-        """Returns the input text with no changes."""
+        """Returns the input text with no changes.
+
+        中文翻译:
+        返回不做任何更改的输入文本。"""
         return text

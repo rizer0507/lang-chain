@@ -1,4 +1,7 @@
-"""Document loaders."""
+"""Document loaders.
+
+中文翻译:
+文档装载机。"""
 
 from typing import TYPE_CHECKING
 

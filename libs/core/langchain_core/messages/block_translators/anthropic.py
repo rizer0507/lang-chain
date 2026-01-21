@@ -1,4 +1,7 @@
-"""Derivations of standard content blocks from Anthropic content."""
+"""Derivations of standard content blocks from Anthropic content.
+
+中文翻译:
+从人类内容衍生出标准内容块。"""
 
 import json
 from collections.abc import Iterable
@@ -11,7 +14,10 @@ from langchain_core.messages import content as types
 def _populate_extras(
     standard_block: types.ContentBlock, block: dict[str, Any], known_fields: set[str]
 ) -> types.ContentBlock:
-    """Mutate a block, populating extras."""
+    """Mutate a block, populating extras.
+
+    中文翻译:
+    改变一个块，填充额外的东西。"""
     if standard_block.get("type") == "non_standard":
         return standard_block
 
@@ -19,7 +25,9 @@ def _populate_extras(
         if key not in known_fields:
             if "extras" not in standard_block:
                 # Below type-ignores are because mypy thinks a non-standard block can
+                # 中文: 下面的类型忽略是因为 mypy 认为非标准块可以
                 # get here, although we exclude them above.
+                # 中文: 到达这里，尽管我们在上面排除了它们。
                 standard_block["extras"] = {}  # type: ignore[typeddict-unknown-key]
             standard_block["extras"][key] = value  # type: ignore[typeddict-item]
 
@@ -43,7 +51,19 @@ def _convert_to_v1_from_anthropic_input(
 
     Returns:
         Updated list with Anthropic blocks converted to v1 format.
-    """
+    
+
+    中文翻译:
+    将 Anthropic 格式块转换为 v1 格式。
+    在 `content_blocks` 解析过程中，我们包装未被识别为 v1 的块
+    块作为“非标准”块，原始块存储在“值”中
+    场。该函数尝试解压这些块并转换任何块
+    可能是 v1 ContentBlocks 的 Anthropic 格式。
+    如果转换失败，该块将保留为“non_standard”块。
+    参数：
+        content：要处理的内容块列表。
+    返回：
+        更新了列表，其中 Anthropic 块已转换为 v1 格式。"""
 
     def _iter_blocks() -> Iterable[types.ContentBlock]:
         blocks: list[dict[str, Any]] = [
@@ -196,7 +216,10 @@ def _convert_citation_to_v1(citation: dict[str, Any]) -> types.Annotation:
 
 
 def _convert_to_v1_from_anthropic(message: AIMessage) -> list[types.ContentBlock]:
-    """Convert Anthropic message content to v1 format."""
+    """Convert Anthropic message content to v1 format.
+
+    中文翻译:
+    将 Anthropic 消息内容转换为 v1 格式。"""
     if isinstance(message.content, str):
         content: list[str | dict] = [{"type": "text", "text": message.content}]
     else:
@@ -243,6 +266,7 @@ def _convert_to_v1_from_anthropic(message: AIMessage) -> list[types.ContentBlock
                     and message.chunk_position != "last"
                 ):
                     # Isolated chunk
+                    # 中文: 孤立的块
                     chunk = message.tool_call_chunks[0]
 
                     tool_call_chunk = types.ToolCallChunk(
@@ -261,6 +285,7 @@ def _convert_to_v1_from_anthropic(message: AIMessage) -> list[types.ContentBlock
                 else:
                     tool_call_block: types.ToolCall | None = None
                     # Non-streaming or gathered chunk
+                    # 中文: 非流式或聚集式块
                     if len(message.tool_calls) == 1:
                         tool_call_block = {
                             "type": "tool_call",
@@ -331,6 +356,7 @@ def _convert_to_v1_from_anthropic(message: AIMessage) -> list[types.ContentBlock
                     and message.chunk_position != "last"
                 ):
                     # First chunk in a stream
+                    # 中文: 流中的第一个块
                     server_tool_call_chunk = {
                         "type": "server_tool_call_chunk",
                         "name": server_tool_use_name,
@@ -380,6 +406,7 @@ def _convert_to_v1_from_anthropic(message: AIMessage) -> list[types.ContentBlock
                     and message.chunk_position != "last"
                 ):
                     # First chunk in a stream
+                    # 中文: 流中的第一个块
                     server_tool_call_chunk = {
                         "type": "server_tool_call_chunk",
                         "name": "remote_mcp",
@@ -468,7 +495,14 @@ def translate_content(message: AIMessage) -> list[types.ContentBlock]:
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从包含人为内容的消息中派生标准内容块。
+    参数：
+        message：要翻译的消息。
+    返回：
+        派生的内容块。"""
     return _convert_to_v1_from_anthropic(message)
 
 
@@ -480,7 +514,14 @@ def translate_content_chunk(message: AIMessageChunk) -> list[types.ContentBlock]
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从具有人为内容的消息块中派生出标准内容块。
+    参数：
+        message：要翻译的消息块。
+    返回：
+        派生的内容块。"""
     return _convert_to_v1_from_anthropic(message)
 
 
@@ -488,7 +529,11 @@ def _register_anthropic_translator() -> None:
     """Register the Anthropic translator with the central registry.
 
     Run automatically when the module is imported.
-    """
+    
+
+    中文翻译:
+    在中央注册表中注册 Anthropic 翻译器。
+    导入模块时自动运行。"""
     from langchain_core.messages.block_translators import (  # noqa: PLC0415
         register_translator,
     )

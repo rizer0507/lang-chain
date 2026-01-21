@@ -1,4 +1,35 @@
-"""Utility code for runnables."""
+"""Runnables 工具函数模块。
+
+本模块提供 Runnable 系统内部使用的工具函数和类。
+
+核心内容:
+---------
+- **ConfigurableField**: 定义可配置字段
+- **ConfigurableFieldSpec**: 可配置字段的规范
+- **AddableDict**: 支持 + 运算符的字典
+- **Input/Output 类型变量**: 用于泛型约束
+- **AST 工具类**: 用于分析函数代码结构
+- **并发工具**: gather_with_concurrency, coro_with_context
+
+可配置字段说明:
+---------------
+可配置字段允许运行时动态修改 Runnable 的参数。
+
+使用示例:
+>>> from langchain_core.runnables import ConfigurableField
+>>> from langchain_openai import ChatOpenAI
+>>>
+>>> model = ChatOpenAI().configurable_fields(
+...     temperature=ConfigurableField(
+...         id="llm_temperature",
+...         name="温度",
+...         description="LLM 的温度参数",
+...     )
+... )
+>>>
+>>> # 运行时配置
+>>> model.with_config(configurable={"llm_temperature": 0.9})
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,7 @@
-"""Tracers that print to the console."""
+"""Tracers that print to the console.
+
+中文翻译:
+打印到控制台的跟踪器。"""
 
 import json
 from collections.abc import Callable
@@ -20,7 +23,15 @@ def try_json_stringify(obj: Any, fallback: str) -> str:
 
     Returns:
         A JSON string if the object can be stringified, otherwise the fallback string.
-    """
+    
+
+    中文翻译:
+    尝试将对象字符串化为 JSON。
+    参数：
+        obj：要字符串化的对象。
+        Fallback：如果对象无法字符串化，则返回后备字符串。
+    返回：
+        如果对象可以字符串化，则为 JSON 字符串，否则为后备字符串。"""
     try:
         return json.dumps(obj, indent=2, ensure_ascii=False)
     except Exception:
@@ -37,7 +48,15 @@ def elapsed(run: Any) -> str:
         A string with the elapsed time in seconds or
             milliseconds if time is less than a second.
 
-    """
+    
+
+    中文翻译:
+    获取跑步的已用时间。
+    参数：
+        run：任何具有 start_time 和 end_time 属性的对象。
+    返回：
+        一个字符串，其中包含经过的时间（以秒为单位）或
+            如果时间小于一秒，则为毫秒。"""
     elapsed_time = run.end_time - run.start_time
     seconds = elapsed_time.total_seconds()
     if seconds < 1:
@@ -46,17 +65,28 @@ def elapsed(run: Any) -> str:
 
 
 class FunctionCallbackHandler(BaseTracer):
-    """Tracer that calls a function with a single str parameter."""
+    """Tracer that calls a function with a single str parameter.
+
+    中文翻译:
+    使用单个 str 参数调用函数的跟踪器。"""
 
     name: str = "function_callback_handler"
-    """The name of the tracer. This is used to identify the tracer in the logs."""
+    """The name of the tracer. This is used to identify the tracer in the logs.
+
+    中文翻译:
+    追踪器的名称。这用于识别日志中的跟踪器。"""
 
     def __init__(self, function: Callable[[str], None], **kwargs: Any) -> None:
         """Create a FunctionCallbackHandler.
 
         Args:
             function: The callback function to call.
-        """
+        
+
+        中文翻译:
+        创建一个 FunctionCallbackHandler。
+        参数：
+            function：要调用的回调函数。"""
         super().__init__(**kwargs)
         self.function_callback = function
 
@@ -71,7 +101,14 @@ class FunctionCallbackHandler(BaseTracer):
 
         Returns:
             A list of parent runs.
-        """
+        
+
+        中文翻译:
+        赶紧让家长跑起来吧。
+        参数：
+            跑：跑去找父母。
+        返回：
+            父运行列表。"""
         parents = []
         current_run = run
         while current_run.parent_run_id:
@@ -91,7 +128,14 @@ class FunctionCallbackHandler(BaseTracer):
 
         Returns:
             A string with the breadcrumbs of the run.
-        """
+        
+
+        中文翻译:
+        获取跑步的痕迹。
+        参数：
+            run：获取面包屑的运行。
+        返回：
+            带有运行的面包屑的字符串。"""
         parents = self.get_parents(run)[::-1]
         return " > ".join(
             f"{parent.run_type}:{parent.name}"
@@ -99,6 +143,7 @@ class FunctionCallbackHandler(BaseTracer):
         )
 
     # logging methods
+    # 中文: 记录方法
     def _on_chain_start(self, run: Run) -> None:
         crumbs = self.get_breadcrumbs(run)
         run_type = run.run_type.capitalize()
@@ -193,10 +238,16 @@ class FunctionCallbackHandler(BaseTracer):
 
 
 class ConsoleCallbackHandler(FunctionCallbackHandler):
-    """Tracer that prints to the console."""
+    """Tracer that prints to the console.
+
+    中文翻译:
+    打印到控制台的跟踪器。"""
 
     name: str = "console_callback_handler"
 
     def __init__(self, **kwargs: Any) -> None:
-        """Create a ConsoleCallbackHandler."""
+        """Create a ConsoleCallbackHandler.
+
+        中文翻译:
+        创建一个 ConsoleCallbackHandler。"""
         super().__init__(function=print, **kwargs)

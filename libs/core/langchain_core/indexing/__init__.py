@@ -3,6 +3,12 @@
 This package contains helper logic to help deal with indexing data into
 a `VectorStore` while avoiding duplicated content and over-writing content
 if it's unchanged.
+
+中文翻译:
+用于帮助将数据索引到向量存储中的代码。
+该包包含帮助程序逻辑，可帮助处理将数据索引到
+`VectorStore`，同时避免重复内容和覆盖内容
+如果它没有改变。
 """
 
 from typing import TYPE_CHECKING

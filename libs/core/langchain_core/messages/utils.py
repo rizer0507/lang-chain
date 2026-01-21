@@ -5,6 +5,13 @@ Some examples of what you can do with these functions include:
 * Convert messages to strings (serialization)
 * Convert messages from dicts to Message objects (deserialization)
 * Filter messages from a list of messages based on name, type or id etc.
+
+中文翻译:
+模块包含用于处理消息的实用函数。
+您可以使用这些函数执行哪些操作的一些示例包括：
+* 将消息转换为字符串（序列化）
+* 将消息从字典转换为消息对象（反序列化）
+* 根据名称、类型或 ID 等从消息列表中过滤消息。
 """
 
 from __future__ import annotations
@@ -63,7 +70,10 @@ logger = logging.getLogger(__name__)
 
 
 def _get_type(v: Any) -> str:
-    """Get the type associated with the object for serialization purposes."""
+    """Get the type associated with the object for serialization purposes.
+
+    中文翻译:
+    获取与对象关联的类型以进行序列化。"""
     if isinstance(v, dict) and "type" in v:
         result = v["type"]
     elif hasattr(v, "type"):
@@ -95,7 +105,10 @@ AnyMessage = Annotated[
     | Annotated[ToolMessageChunk, Tag(tag="ToolMessageChunk")],
     Field(discriminator=Discriminator(_get_type)),
 ]
-"""A type representing any defined `Message` or `MessageChunk` type."""
+"""A type representing any defined `Message` or `MessageChunk` type.
+
+中文翻译:
+表示任何定义的“Message”或“MessageChunk”类型的类型。"""
 
 
 def get_buffer_string(
@@ -129,8 +142,34 @@ def get_buffer_string(
         ]
         get_buffer_string(messages)
         # -> "Human: Hi, how are you?\nAI: Good, how are you?"
+        # 中文: ->“人类：嗨，你好吗？\n人工智能：很好，你好吗？”
         ```
-    """
+    
+
+中文翻译:
+将一系列消息转换为字符串并将它们连接成一个字符串。
+    参数：
+        messages：要转换为字符串的消息。
+        human_prefix：添加到“HumanMessage”内容之前的前缀。
+        ai_prefix：添加到“AIMessage”内容之前的前缀。
+    返回：
+        所有输入消息的单个字符串串联。
+    加薪：
+        ValueError：如果遇到不支持的消息类型。
+    注意：
+        如果消息是“AIMessage”并且包含“tool_calls”下的两个工具调用
+        以及 `additional_kwargs["function_call"]` 下的函数调用，仅工具
+        调用将附加到字符串表示形式中。
+    示例：
+        ````蟒蛇
+        从 langchain_core 导入 AIMessage、HumanMessage
+        消息 = [
+            HumanMessage(content="嗨，你好吗？"),
+            AIMessage(content="很好，你好吗？"),
+        ]
+        获取缓冲区字符串（消息）
+        # -> “人类：嗨，你好吗？\nAI：很好，你好吗？”
+        ````"""
     string_messages = []
     for m in messages:
         if isinstance(m, HumanMessage):
@@ -156,6 +195,7 @@ def get_buffer_string(
                 message += f"{m.tool_calls}"
             elif "function_call" in m.additional_kwargs:
                 # Legacy behavior assumes only one function call per message
+                # 中文: 传统行为假设每条消息仅调用一次函数
                 message += f"{m.additional_kwargs['function_call']}"
 
         string_messages.append(message)
@@ -204,7 +244,14 @@ def messages_from_dict(messages: Sequence[dict]) -> list[BaseMessage]:
     Returns:
         list of messages (BaseMessages).
 
-    """
+    
+
+    中文翻译:
+    将消息序列从字典转换为“Message”对象。
+    参数：
+        messages：要转换的消息序列（作为字典）。
+    返回：
+        消息列表 (BaseMessages)。"""
     return [_message_from_dict(m) for m in messages]
 
 
@@ -216,10 +263,18 @@ def message_chunk_to_message(chunk: BaseMessage) -> BaseMessage:
 
     Returns:
         Message.
-    """
+    
+
+    中文翻译:
+    将消息块转换为“消息”。
+    参数：
+        chunk：要转换的消息块。
+    返回：
+        留言。"""
     if not isinstance(chunk, BaseMessageChunk):
         return chunk
     # chunk classes always have the equivalent non-chunk class as their first parent
+    # 中文: 块类始终具有等效的非块类作为其第一个父级
     ignore_keys = ["type"]
     if isinstance(chunk, AIMessageChunk):
         ignore_keys.extend(["tool_call_chunks", "chunk_position"])
@@ -234,7 +289,10 @@ def message_chunk_to_message(chunk: BaseMessage) -> BaseMessage:
 MessageLikeRepresentation = (
     BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]
 )
-"""A type representing the various ways a message can be represented."""
+"""A type representing the various ways a message can be represented.
+
+中文翻译:
+表示消息表示的各种方式的类型。"""
 
 
 def _create_message_from_message_type(
@@ -264,7 +322,24 @@ def _create_message_from_message_type(
         ValueError: if the message type is not one of `'human'`, `'user'`, `'ai'`,
             `'assistant'`, `'function'`, `'tool'`, `'system'`, or
             `'developer'`.
-    """
+    
+
+    中文翻译:
+    从“Message”类型和内容字符串创建消息。
+    参数：
+        message_type：消息的类型（例如，“人类”、“人工智能”等）。
+        内容：内容字符串。
+        名称：消息的名称。
+        tool_call_id：工具调用 ID。
+        tool_calls：工具调用。
+        id：消息的id。
+        extra_kwargs：附加关键字参数。
+    返回：
+        适当类型的消息。
+    加薪：
+        ValueError：如果消息类型不是“人类”、“用户”、“人工智能”之一，
+            “助手”、“功能”、“工具”、“系统”或
+            “开发商”。"""
     kwargs: dict[str, Any] = {}
     if name is not None:
         kwargs["name"] = name
@@ -281,6 +356,7 @@ def _create_message_from_message_type(
         kwargs["tool_calls"] = []
         for tool_call in tool_calls:
             # Convert OpenAI-format tool call to LangChain format.
+            # 中文: 将OpenAI格式的工具调用转换为LangChain格式。
             if "function" in tool_call:
                 args = tool_call["function"]["arguments"]
                 if isinstance(args, str):
@@ -349,7 +425,23 @@ def _convert_to_message(message: MessageLikeRepresentation) -> BaseMessage:
         NotImplementedError: if the message type is not supported.
         ValueError: if the message dict does not contain the required keys.
 
-    """
+    
+
+    中文翻译:
+    从各种消息格式实例化“消息”。
+    消息格式可以是以下之一：
+    - `BaseMessagePromptTemplate`
+    - `基本消息`
+    - （角色字符串，模板）的 2 元组；例如，(`'人类'`，`'{user_input}'`)
+    - 字典：带有角色和内容键的消息字典
+    - 字符串：(`'human'`, template) 的简写；例如，“{user_input}”
+    参数：
+        消息：以受支持的格式之一表示消息。
+    返回：
+        消息或消息模板的实例。
+    加薪：
+        NotImplementedError：如果消息类型不受支持。
+        ValueError：如果消息字典不包含所需的键。"""
     if isinstance(message, BaseMessage):
         message_ = message
     elif isinstance(message, Sequence):
@@ -370,6 +462,7 @@ def _convert_to_message(message: MessageLikeRepresentation) -> BaseMessage:
             except KeyError:
                 msg_type = msg_kwargs.pop("type")
             # None msg content is not allowed
+            # 中文: None 不允许的消息内容
             msg_content = msg_kwargs.pop("content") or ""
         except KeyError as e:
             msg = f"Message dict must contain 'role' and 'content' keys, got {message}"
@@ -399,8 +492,16 @@ def convert_to_messages(
     Returns:
         list of messages (BaseMessages).
 
-    """
+    
+
+    中文翻译:
+    将消息序列转换为消息列表。
+    参数：
+        messages：要转换的消息序列。
+    返回：
+        消息列表 (BaseMessages)。"""
     # Import here to avoid circular imports
+    # 中文: 在这里导入以避免循环导入
     from langchain_core.prompt_values import PromptValue  # noqa: PLC0415
 
     if isinstance(messages, PromptValue):
@@ -449,6 +550,7 @@ def _runnable_support(
         **kwargs: _P.kwargs,
     ) -> _R_co | Runnable[Sequence[MessageLikeRepresentation], _R_co]:
         # Import locally to prevent circular import.
+        # 中文: 本地导入，防止循环导入。
         from langchain_core.runnables.base import RunnableLambda  # noqa: PLC0415
 
         if messages is not None:
@@ -542,7 +644,72 @@ def filter_messages(
             HumanMessage("what's your name", id="foo", name="example_user"),
         ]
         ```
-    """
+    
+
+    中文翻译:
+    根据“名称”、“类型”或“id”过滤消息。
+    参数：
+        messages：要过滤的类似消息对象的序列。
+        include_names：要包含的消息名称。
+        except_names：要排除的消息名称。
+        include_types：要包含的消息类型。可以指定为字符串名称
+            （例如“系统”、“人类”、“人工智能”……）或作为“BaseMessage”
+            类（例如“SystemMessage”、“HumanMessage”、“AIMessage”……）。
+        except_types：要排除的消息类型。可以指定为字符串名称
+            （例如“系统”、“人类”、“人工智能”……）或作为“BaseMessage”
+            类（例如“SystemMessage”、“HumanMessage”、“AIMessage”……）。
+        include_ids：要包含的消息 ID。
+        except_ids：要排除的消息 ID。
+        except_tool_calls：要排除的工具调用 ID。
+            可以是以下之一：
+            - `True`：具有工具调用的所有`AIMessage`对象和所有`ToolMessage`
+                对象将被排除。
+            - 要排除的一系列工具调用 ID：
+                - 具有相应工具调用 ID 的“ToolMessage”对象将是
+                    排除。
+                - AIMessage 中的“tool_calls”将更新为排除
+                    匹配工具调用。如果所有“tool_calls”都从
+                    AIMessage，整个消息被排除。
+    返回：
+        至少满足一个“incl_*”条件且无条件的消息列表
+        `excl_*` 条件。如果没有指定“incl_*”条件，则
+        任何未明确排除的内容都将包括在内。
+    加薪：
+        ValueError：如果提供了两个不兼容的参数。
+    示例：
+        ````蟒蛇
+        从 langchain_core.messages 导入（
+            过滤消息，
+            人工智能留言，
+            人类讯息，
+            系统消息，
+        ）
+        消息 = [
+            SystemMessage("你是一个好助手。"),
+            HumanMessage("你叫什么名字", id="foo", name="example_user"),
+            AIMessage("steve-o", id="bar", name="example_assistant"),
+            人类讯息(
+                “你最喜欢什么颜色”，
+                id=“巴兹”，
+            ),
+            人工智能留言(
+                “硅蓝”，
+                id =“废话”，
+            ),
+        ]
+        过滤消息（
+            消息，
+            incl_names=("example_user", "example_assistant"),
+            incl_types=("系统",),
+            excl_ids=("酒吧",),
+        ）
+        ````
+        ````蟒蛇
+        [
+            SystemMessage("你是一个好助手。"),
+            HumanMessage("你叫什么名字", id="foo", name="example_user"),
+        ]
+        ````"""
     messages = convert_to_messages(messages)
     filtered: list[BaseMessage] = []
     for msg in messages:
@@ -571,6 +738,7 @@ def filter_messages(
 
                 content = msg.content
                 # handle Anthropic content blocks
+                # 中文: 处理人为内容块
                 if isinstance(msg.content, list):
                     content = [
                         content_block
@@ -591,6 +759,7 @@ def filter_messages(
                 continue
 
         # default to inclusion when no inclusion criteria given.
+        # 中文: 当未给出纳入标准时默认纳入。
         if (
             not (include_types or include_ids or include_names)
             or (include_names and msg.name in include_names)
@@ -704,7 +873,97 @@ def merge_message_runs(
         ]
 
         ```
-    """
+    
+
+中文翻译:
+合并相同类型的连续消息。
+    ！！！注释
+        `ToolMessage` 对象不会合并，因为每个对象都有一个不同的工具调用 ID
+        无法合并。
+    参数：
+        messages：要合并的类似消息对象的序列。
+        chunk_separator：指定要插入消息块之间的字符串。
+    返回：
+        连续运行的消息类型合并为单个的 BaseMessage 列表
+        消息。默认情况下，如果要合并的两条消息都有字符串内容，
+        合并的内容是两个字符串与换行符的串联
+        分隔符。
+        消息块之间插入的分隔符可以通过指定来控制
+        任何带有“chunk_separator”的字符串。如果至少有一条消息有一个列表
+        的内容块，合并的内容是内容块的列表。
+    示例：
+        ````蟒蛇
+        从 langchain_core.messages 导入（
+            合并消息运行，
+            人工智能留言，
+            人类讯息，
+            系统消息，
+            工具调用，
+        ）
+        消息 = [
+            SystemMessage("你是一个好助手。"),
+            人类讯息(
+                “你最喜欢什么颜色”，
+                id =“富”，
+            ),
+            人类讯息(
+                “等待你最喜欢的食物”，
+                id=“酒吧”，
+            ),
+            人工智能留言(
+                “我最喜欢的颜色”，
+                工具调用=[
+                    工具调用(
+                        名称=“blah_tool”，args={“x”：2}，id=“123”，类型=“tool_call”
+                    ）
+                ],
+                id=“巴兹”，
+            ),
+            人工智能留言(
+                [{"type": "text", "text": "我最喜欢的菜是烤宽面条"}],
+                工具调用=[
+                    工具调用(
+                        名称=“blah_tool”，
+                        args={"x": -10},
+                        ID =“456”，
+                        类型=“工具调用”，
+                    ）
+                ],
+                id =“模糊”，
+            ),
+        ]
+        merge_message_runs（消息）
+        ````
+        ````蟒蛇
+        [
+            SystemMessage("你是一个好助手。"),
+            人类讯息(
+                “你最喜欢什么颜色\n”
+                "等待你最喜欢的食物", id="foo",
+            ),
+            人工智能留言(
+                [
+                    “我最喜欢的颜色”，
+                    {"type": "text", "text": "我最喜欢的菜是烤宽面条"}
+                ],
+                工具调用=[
+                    工具调用({
+                        “名称”：“blah_tool”，
+                        “args”：{“x”：2}，
+                        “id”：“123”，
+                        “类型”：“工具调用”
+                    }),
+                    工具调用({
+                        “名称”：“blah_tool”，
+                        “args”：{“x”：-10}，
+                        “id”：“456”，
+                        “类型”：“工具调用”
+                    })
+                ]
+                id=“巴兹”
+            ),
+        ]
+        ````"""
     if not messages:
         return []
     messages = convert_to_messages(messages)
@@ -733,6 +992,7 @@ def merge_message_runs(
 
 # TODO: Update so validation errors (for token_counter, for example) are raised on
 # init not at runtime.
+# 中文: 不在运行时初始化。
 @_runnable_support
 def trim_messages(
     messages: Iterable[MessageLikeRepresentation] | PromptValue,
@@ -882,12 +1142,18 @@ def trim_messages(
             strategy="last",
             token_counter=ChatOpenAI(model="gpt-4o"),
             # Most chat models expect that chat history starts with either:
+            # 中文: 大多数聊天模型期望聊天历史记录以以下任一开头：
             # (1) a HumanMessage or
+            # 中文: (1) HumanMessage 或
             # (2) a SystemMessage followed by a HumanMessage
+            # 中文: (2) SystemMessage 后跟 HumanMessage
             start_on="human",
             # Usually, we want to keep the SystemMessage
+            # 中文: 通常，我们希望保留 SystemMessage
             # if it's present in the original history.
+            # 中文: 如果它存在于原始历史中。
             # The SystemMessage has special instructions for the model.
+            # 中文: SystemMessage 对模型有特殊说明。
             include_system=True,
             allow_partial=False,
         )
@@ -910,12 +1176,14 @@ def trim_messages(
             max_tokens=45,
             strategy="last",
             # Using the "approximate" shortcut for fast token counting
+            # 中文: 使用“近似”快捷方式进行快速令牌计数
             token_counter="approximate",
             start_on="human",
             include_system=True,
         )
 
         # This is equivalent to using `count_tokens_approximately` directly
+        # 中文: 这相当于直接使用 `count_tokens_approximately`
         from langchain_core.messages.utils import count_tokens_approximately
 
         trim_messages(
@@ -935,19 +1203,29 @@ def trim_messages(
             trim_messages(
                 messages,
                 # When `len` is passed in as the token counter function,
+                # 中文: 当“len”作为令牌计数器函数传入时，
                 # max_tokens will count the number of messages in the chat history.
+                # 中文: max_tokens 将计算聊天记录中的消息数量。
                 max_tokens=4,
                 strategy="last",
                 # Passing in `len` as a token counter function will
+                # 中文: 传入 `len` 作为令牌计数器函数将
                 # count the number of messages in the chat history.
+                # 中文: 统计聊天记录中的消息数量。
                 token_counter=len,
                 # Most chat models expect that chat history starts with either:
+                # 中文: 大多数聊天模型期望聊天历史记录以以下任一开头：
                 # (1) a HumanMessage or
+                # 中文: (1) HumanMessage 或
                 # (2) a SystemMessage followed by a HumanMessage
+                # 中文: (2) SystemMessage 后跟 HumanMessage
                 start_on="human",
                 # Usually, we want to keep the SystemMessage
+                # 中文: 通常，我们希望保留 SystemMessage
                 # if it's present in the original history.
+                # 中文: 如果它存在于原始历史中。
                 # The SystemMessage has special instructions for the model.
+                # 中文: SystemMessage 对模型有特殊说明。
                 include_system=True,
                 allow_partial=False,
             )
@@ -993,8 +1271,11 @@ def trim_messages(
 
         def dummy_token_counter(messages: list[BaseMessage]) -> int:
             # treat each message like it adds 3 default tokens at the beginning
+            # 中文: 将每条消息视为在开头添加 3 个默认标记
             # of the message and at the end of the message. 3 + 4 + 3 = 10 tokens
+            # 中文: 消息的开头和消息的末尾。 3 + 4 + 3 = 10 个代币
             # per message.
+            # 中文: 每条消息。
 
             default_content_len = 4
             default_msg_prefix_len = 3
@@ -1041,8 +1322,260 @@ def trim_messages(
             ),
         ]
         ```
-    """
+    
+
+中文翻译:
+将消息修剪为令牌计数以下。
+    `trim_messages` 可用于将聊天历史记录的大小减少到指定的大小
+    令牌或消息计数。
+    无论哪种情况，如果将修剪后的聊天历史记录传回聊天模型
+    直接生成的聊天记录通常应满足以下条件
+    属性：
+    1. 生成的聊天记录应该是有效的。大多数聊天模型都期望聊天
+        历史记录以 (1) `HumanMessage` 或 (2) `SystemMessage` 开始
+        接下来是“HumanMessage”。要实现此目的，请设置 `start_on=' human'`。
+        另外，一般`ToolMessage`只能出现在`AIMessage`之后
+        这涉及到工具调用。
+    2.它包括最近的消息并删除聊天记录中的旧消息。
+        要实现此目的，请设置`strategy='last'`。
+    3. 通常，新的聊天记录应该包含`SystemMessage`，如果
+        由于“SystemMessage”包含，因此存在于原始聊天记录中
+        对聊天模型的特殊说明。 `SystemMessage` 几乎总是
+        历史记录中的第一条消息（如果存在）。为了实现这一目标，设置
+        `include_system=True`。
+    ！！！注释
+        下面的示例展示了如何配置 `trim_messages` 来实现某种行为
+        与上述性质一致。
+    参数：
+        messages：要修剪的类似消息对象的序列。
+        max_tokens：修剪消息的最大令牌计数。
+        token_counter：用于计算“BaseMessage”或 a 中的令牌的函数或 llm
+            `BaseMessage` 列表。
+            如果传入了`BaseLanguageModel`
+            将使用“BaseLanguageModel.get_num_tokens_from_messages()”。设置为
+            `len` 用于计算聊天历史记录中的**消息**数量。
+            为了方便起见，您还可以使用字符串快捷方式：
+            - `'approximate'`：使用 `count_tokens_approximately` 进行快速、近似
+                令牌计数。
+            ！！！注释
+                “count_tokens_approximately”（或快捷方式“approximate”）是
+                建议在热路径上使用“trim_messages”，其中确切的标记
+                计数是没有必要的。
+        策略：修剪策略。
+            - `'first'`：保留消息的第一个 `<= n_count` 标记。
+            - `'last'`：保留消息的最后一个 `<= n_count` 标记。
+        allowed_partial：如果只能分割部分消息，是否分割消息
+            包括在内。
+            如果 `strategy='last'` 则消息的最后部分内容是
+            包括在内。如果 `strategy='first'` 则 a 的第一个部分内容
+            消息都包含在内。
+        end_on：结束的消息类型。
+            如果指定，则该类型最后一次出现后的每条消息都是
+            被忽略。如果 `strategy='last'` 那么这是在我们尝试获取之前完成的
+            最后一个“max_tokens”。如果 `strategy='first'` 那么这是在我们得到之后完成的
+            第一个“max_tokens”。可以指定为字符串名称（例如“system”，
+            `' human'`，`'ai'`，...）或作为 `BaseMessage` 类（例如 `SystemMessage`，
+            `HumanMessage`、`AIMessage`、...)。可以是单个类型或类型列表。
+        start_on：开始的消息类型。
+            仅当`strategy='last'`时才应指定。如果指定则每个
+            该类型第一次出现之前的消息将被忽略。这样就完成了
+            在我们将初始消息修剪到最后一个“max_tokens”之后。不适用
+            如果“include_system=True”，则指向索引 0 处的“SystemMessage”。可以指定
+            作为字符串名称（例如`'system'`，`' human'`，`'ai'`，...）或作为
+            `BaseMessage` 类（例如 `SystemMessage`、`HumanMessage`、`AIMessage`、
+            ...）。可以是单个类型或类型列表。
+        include_system: 如果索引处有`SystemMessage`是否保留
+            ‘0’。
+            仅当`strategy="last"`时才应指定。
+        text_splitter：函数或 `langchain_text_splitters.TextSplitter`
+            分割消息的字符串内容。
+            仅当“allow_partial=True”时使用。如果 `strategy='last'` 则最后一次分割
+            来自部分消息的令牌将被包括在内。如果 `strategy='first'` 那么
+            将包含部分消息中的第一个分割令牌。代币splitter 假设保留分隔符，因此可以拆分内容
+            直接连接以重新创建原始文本。默认为分割
+            在换行符上。
+    返回：
+        修剪后的“BaseMessage”列表。
+    加薪：
+        ValueError：如果指定了两个不兼容的参数或无法识别的参数
+            指定了“策略”。
+    示例：
+        根据令牌计数修剪聊天历史记录，如果
+        存在，并确保聊天历史记录以“HumanMessage”（或
+        “SystemMessage”后跟一个“HumanMessage”）。
+        ````蟒蛇
+        从 langchain_core.messages 导入（
+            人工智能留言，
+            人类讯息，
+            基本消息，
+            系统消息，
+            修剪消息，
+        ）
+        消息 = [
+            SystemMessage("你是一个好助手，你总是用笑话来回应。"),
+            HumanMessage("我想知道为什么它被称为 langchain"),
+            人工智能留言(
+                '好吧，我猜他们认为“WordRope”和“SentenceString”只是'
+                “没有同样的戒指！”
+            ),
+            HumanMessage(“哈里森到底在追谁”),
+            人工智能留言(
+                “嗯，让我想想。\n\n为什么，他可能在追最后一个”
+                “在办公室喝杯咖啡吧！”
+            ),
+            HumanMessage("你怎么称呼一只不会说话的鹦鹉"),
+        ]
+        修剪消息（
+            消息，
+            最大令牌=45，
+            策略=“最后”，
+            token_counter=ChatOpenAI(型号=“gpt-4o”),
+            # 大多数聊天模型期望聊天历史记录以以下任一开头：
+            # (1) 一条 HumanMessage 或
+            # (2) SystemMessage 后跟 HumanMessage
+            start_on=“人类”，
+            # 通常，我们希望保留 SystemMessage
+            # 如果它存在于原始历史中。
+            # SystemMessage 对模型有特殊说明。
+            include_system=真，
+            允许部分=假，
+        ）
+        ````
+        ````蟒蛇
+        [
+            系统消息(
+                content="你是个好助手，你总是用笑话来回应。"
+            ),
+            HumanMessage(content="你怎么称呼一只不会说话的鹦鹉"),
+        ]
+        ````
+        使用“approximate”进行近似令牌计数来修剪聊天历史记录：
+        ````蟒蛇
+        修剪消息（
+            消息，
+            最大令牌=45，
+            策略=“最后”，
+            # 使用“近似”快捷方式进行快速令牌计数
+            token_counter=“大约”，
+            start_on=“人类”，
+            include_system=真，
+        ）
+        # 这相当于直接使用 `count_tokens_approximately`
+        从 langchain_core.messages.utils 导入 count_tokens_approximately
+        修剪消息（
+            消息，
+            最大令牌=45，
+            策略=“最后”，
+            token_counter=count_tokens_approximately,
+            start_on=“人类”，
+            include_system=真，
+        ）
+        ````
+        根据消息计数修剪聊天记录，如果存在则保留“SystemMessage”
+        存在，并确保聊天历史记录以 HumanMessage 开头（
+        或“SystemMessage”后跟“HumanMessage”）。
+            修剪消息（
+                消息，
+                # 当 `len` 作为令牌计数器函数传入时，
+                # max_tokens 将计算聊天记录中的消息数量。
+                最大令牌数=4,
+                策略=“最后”，
+                # 传入 `len` 作为令牌计数器函数将
+                # 统计聊天记录中的消息数量。
+                token_counter=len,
+                # 大多数聊天模型期望聊天历史记录以以下任一开头：
+                # (1) 一条 HumanMessage 或
+                # (2) SystemMessage 后跟 HumanMessage
+                start_on=“人类”，
+                # 通常，我们希望保留 SystemMessage
+                # 如果它存在于原始历史中。
+                # SystemMessage 对模型有特殊说明。
+                include_system=真，
+                允许部分=假，
+            ）
+        ````蟒蛇
+        [
+            系统消息(
+                content="你是个好助手，你总是用笑话来回应。"
+            ),HumanMessage(content="哈里森到底在追谁"),
+            人工智能留言(
+                content="嗯，让我想想。\n\n为什么，他可能在追"
+                “办公室最后一杯咖啡！”
+            ),
+            HumanMessage(content="你怎么称呼一只不会说话的鹦鹉"),
+        ]
+        ````
+        使用自定义令牌计数器功能修剪聊天历史记录
+        每条消息中的令牌数。
+        ````蟒蛇
+        消息 = [
+            SystemMessage("这是一个 4 个令牌的文本。完整的消息是 10 个令牌。"),
+            人类讯息(
+                “这是一个 4 个令牌的文本。完整的消息是 10 个令牌。”, id="first"
+            ),
+            人工智能留言(
+                [
+                    {"type": "text", "text": "这是第 4 个代币块。"},
+                    {"type": "text", "text": "这是第二个 4 代币块。"},
+                ],
+                id=“第二个”，
+            ),
+            人类讯息(
+                “这是一个 4 个令牌的文本。完整的消息是 10 个令牌。”, id="third"
+            ),
+            人工智能留言(
+                "这是 4 个令牌的文本。完整的消息是 10 个令牌。",
+                id=“第四”，
+            ),
+        ]
+        def dummy_token_counter(消息: list[BaseMessage]) -> int:
+            # 将每条消息视为在开头添加 3 个默认标记
+            消息的 # 和消息的末尾。 3 + 4 + 3 = 10 个代币
+            # 每条消息。
+            默认内容长度 = 4
+            默认消息前缀长度 = 3
+            default_msg_suffix_len = 3
+            计数 = 0
+            对于消息中的消息：
+                if isinstance(msg.content, str):
+                    计数 += (
+                        默认消息前缀长度
+                        + 默认内容长度
+                        + default_msg_suffix_len
+                    ）
+                if isinstance(msg.content, 列表):
+                    计数 += (
+                        默认消息前缀长度
+                        + len(msg.content) * default_content_len
+                        + default_msg_suffix_len
+                    ）
+            返回计数
+        ````
+        前 30 个令牌，允许部分消息：
+        ````蟒蛇
+        修剪消息（
+            消息，
+            最大令牌数=30,
+            token_counter=dummy_token_counter,
+            策略=“第一”，
+            允许部分=真，
+        ）
+        ````
+        ````蟒蛇
+        [
+            SystemMessage("这是一个 4 个令牌的文本。完整的消息是 10 个令牌。"),
+            人类讯息(
+                "这是 4 个令牌的文本。完整的消息是 10 个令牌。",
+                id=“第一个”，
+            ),
+            人工智能留言(
+                [{"type": "text", "text": "这是第一个 4 个代币块。"}],
+                id=“第二个”，
+            ),
+        ]
+        ````"""
     # Validate arguments
+    # 中文: 验证参数
     if start_on and strategy == "first":
         msg = "start_on parameter is only valid with strategy='last'"
         raise ValueError(msg)
@@ -1053,6 +1586,7 @@ def trim_messages(
     messages = convert_to_messages(messages)
 
     # Handle string shortcuts for token counter
+    # 中文: 处理令牌计数器的字符串快捷方式
     if isinstance(token_counter, str):
         if token_counter in _TOKEN_COUNTER_SHORTCUTS:
             actual_token_counter = _TOKEN_COUNTER_SHORTCUTS[token_counter]
@@ -1067,6 +1601,7 @@ def trim_messages(
             raise ValueError(msg)
     else:
         # Type narrowing: at this point token_counter is not a str
+        # 中文: 类型缩小：此时 token_counter 不是 str
         actual_token_counter = token_counter  # type: ignore[assignment]
 
     if hasattr(actual_token_counter, "get_num_tokens_from_messages"):
@@ -1126,6 +1661,7 @@ def trim_messages(
 _SingleMessage = BaseMessage | str | dict[str, Any]
 _T = TypeVar("_T", bound=_SingleMessage)
 # A sequence of _SingleMessage that is NOT a bare str
+# 中文: _SingleMessage 序列，不是裸露的 str
 _MultipleMessages = Sequence[_T]
 
 
@@ -1229,17 +1765,102 @@ def convert_to_openai_messages(
         ]
         oai_messages = convert_to_openai_messages(messages)
         # -> [
+        # 中文: None
         #   {'role': 'system', 'content': 'foo'},
+        #   中文: {'角色': '系统', '内容': 'foo'},
         #   {'role': 'user', 'content': [{'type': 'text', 'text': 'whats in this'}, {'type': 'image_url', 'image_url': {'url': "data:image/png;base64,'/9j/4AAQSk'"}}]},
+        #   中文: {'role': 'user', 'content': [{'type': 'text', 'text': '这里面有什么'}, {'type': 'image_url', 'image_url': {'url': "data:image/png;base64,'/9j/4AAQSk'"}}]},
         #   {'role': 'assistant', 'tool_calls': [{'type': 'function', 'id': '1','function': {'name': 'analyze', 'arguments': '{"baz": "buz"}'}}], 'content': ''},
+        #   中文: {'role': 'assistant', 'tool_calls': [{'type': 'function', 'id': '1','function': {'name': 'analyze', 'arguments': '{"baz": "buz"}'}}], 'content': ''},
         #   {'role': 'tool', 'name': 'bar', 'content': 'foobar'},
+        #   中文: {'角色': '工具', '名称': 'bar', '内容': 'foobar'},
         #   {'role': 'assistant', 'content': 'thats nice'}
+        #   中文: {'角色': '助理', '内容': '那很好'}
         # ]
         ```
 
     !!! version-added "Added in `langchain-core` 0.3.11"
 
-    """  # noqa: E501
+    
+
+    中文翻译:
+    将 LangChain 消息转换为 OpenAI 消息字典。
+    参数：
+        messages：类似消息的对象或可迭代的对象，其内容为
+            OpenAI、Anthropic、Bedrock Converse 或 VertexAI 格式。
+        text_format：如何格式化字符串或文本块内容：
+            - `'字符串'`：
+                如果消息具有字符串内容，则将其保留为字符串。如果
+                消息的内容块都是“文本”类型，这些
+                与换行符连接以形成单个字符串。如果一条消息有
+                内容块且至少有一个不是“文本”类型，然后
+                所有块都保留为字典。
+            - `'阻止'`：
+                如果消息有字符串内容，则会将其转换为列表
+                具有“文本”类型的单个内容块。如果一条消息有
+                内容块保留原样。
+        include_id: 是否在openai消息中包含消息ID，如果
+            存在于源消息中。
+        pass_through_unknown_blocks：是否包含未知的内容块
+            输出中的格式。如果为“False”，则在未知的情况下会引发错误
+            遇到内容块。
+    加薪：
+        ValueError：如果指定了无法识别的“text_format”，或者如果消息
+            内容块缺少预期的键。
+    返回：
+        返回类型取决于输入类型：
+        - 字典：
+            如果传入单个类似消息的对象，则为单个 OpenAI 消息
+            返回字典。
+        - 列表[字典]：
+            如果传入一系列类似消息的对象，则为 OpenAI 的列表
+            返回消息字典。
+    示例：
+        ````蟒蛇
+        从 langchain_core.messages 导入（
+            Convert_to_openai_messages,
+            人工智能留言，
+            系统消息，
+            工具消息，
+        ）
+        消息 = [
+            SystemMessage([{"type": "text", "text": "foo"}]),
+            {
+                “角色”：“用户”，
+                “内容”：[
+                    {"type": "text", "text": "这是什么"},
+                    {
+                        “类型”：“图像_url”，
+                        "image_url": {"url": "data:image/png;base64,'/9j/4AAQSk'"},
+                    },
+                ],
+            },
+            人工智能留言(
+                "",
+                工具调用=[
+                    {
+                        “名称”：“分析”，
+                        "args": {"baz": "buz"},
+                        “id”：“1”，
+                        “类型”：“工具调用”，
+                    }
+                ],
+            ),
+            ToolMessage("foobar", tool_call_id="1", name="bar"),
+            {"role": "助理", "content": "不错"},
+        ]
+        oai_messages = Convert_to_openai_messages(消息)
+        # -> [
+        # 中文: None
+        # {'角色': '系统', '内容': 'foo'},
+        # {'role': 'user', 'content': [{'type': 'text', 'text': '这里面有什么'}, {'type': 'image_url', 'image_url': {'url': "data:image/png;base64,'/9j/4AAQSk'"}}]},
+        # {'role': 'assistant', 'tool_calls': [{'type': 'function', 'id': '1','function': {'name': 'analyze', 'arguments': '{"baz": "buz"}'}}], 'content': ''},
+        # 中文: {'role': 'assistant', 'tool_calls': [{'type': 'function', 'id': '1','function': {'name': 'analyze', 'arguments': '{"baz": "buz"}'}}], 'content': ''},
+        # {'角色': '工具', '名称': 'bar', '内容': 'foobar'},
+        # {'角色': '助理', '内容': '那很好'}
+        #]
+        ````
+    !!! version-added “在 `langchain-core` 0.3.11 中添加”"""  # noqa: E501
     if text_format not in {"string", "block"}:
         err = f"Unrecognized {text_format=}, expected one of 'string' or 'block'."
         raise ValueError(err)
@@ -1286,6 +1907,7 @@ def convert_to_openai_messages(
             content = []
             for j, block in enumerate(message.content):
                 # OpenAI format
+                # 中文: OpenAI 格式
                 if isinstance(block, str):
                     content.append({"type": "text", "text": block})
                 elif block.get("type") == "text":
@@ -1314,6 +1936,7 @@ def convert_to_openai_messages(
                         }
                     )
                 # Standard multi-modal content block
+                # 中文: 标准多模式内容块
                 elif is_data_content_block(block):
                     formatted_block = convert_to_openai_data_block(block)
                     if (
@@ -1325,8 +1948,10 @@ def convert_to_openai_messages(
                         formatted_block["file"]["filename"] = "LC_AUTOGENERATED"
                     content.append(formatted_block)
                 # Anthropic and Bedrock converse format
+                # 中文: Anthropic and Bedrock converse format
                 elif (block.get("type") == "image") or "image" in block:
                     # Anthropic
+                    # 中文: 人择
                     if source := block.get("source"):
                         if missing := [
                             k for k in ("media_type", "type", "data") if k not in source
@@ -1350,6 +1975,7 @@ def convert_to_openai_messages(
                             }
                         )
                     # Bedrock converse
+                    # 中文: 基岩匡威
                     elif image := block.get("image"):
                         if missing := [
                             k for k in ("source", "format") if k not in image
@@ -1381,6 +2007,7 @@ def convert_to_openai_messages(
                         )
                         raise ValueError(err)
                 # OpenAI file format
+                # 中文: OpenAI 文件格式
                 elif (
                     block.get("type") == "file"
                     and isinstance(block.get("file"), dict)
@@ -1391,6 +2018,7 @@ def convert_to_openai_messages(
                         block["file"]["filename"] = "LC_AUTOGENERATED"
                     content.append(block)
                 # OpenAI audio format
+                # 中文: OpenAI 音频格式
                 elif (
                     block.get("type") == "input_audio"
                     and isinstance(block.get("input_audio"), dict)
@@ -1473,6 +2101,7 @@ def convert_to_openai_messages(
                         status="error" if block.get("is_error") else "success",
                     )
                     # Recurse to make sure tool message contents are OpenAI format.
+                    # 中文: 递归以确保工具消息内容为 OpenAI 格式。
                     tool_messages.extend(
                         convert_to_openai_messages(
                             [tool_message], text_format=text_format
@@ -1511,6 +2140,7 @@ def convert_to_openai_messages(
                         text = text["text"]
                     content.append({"type": "text", "text": text})
                 # VertexAI format
+                # 中文: VertexAI格式
                 elif block.get("type") == "media":
                     if missing := [k for k in ("mime_type", "data") if k not in block]:
                         err = (
@@ -1578,8 +2208,10 @@ def _first_max_tokens(
         return messages
 
     # Check if all messages already fit within token limit
+    # 中文: 检查所有消息是否已符合令牌限制
     if token_counter(messages) <= max_tokens:
         # When all messages fit, only apply end_on filtering if needed
+        # 中文: 当所有消息都适合时，仅在需要时应用 end_on 过滤
         if end_on:
             for _ in range(len(messages)):
                 if not _is_message_type(messages[-1], end_on):
@@ -1589,6 +2221,7 @@ def _first_max_tokens(
         return messages
 
     # Use binary search to find the maximum number of messages within token limit
+    # 中文: 使用二分查找查找令牌限制内的最大消息数
     left, right = 0, len(messages)
     max_iterations = len(messages).bit_length()
     for _ in range(max_iterations):
@@ -1602,6 +2235,7 @@ def _first_max_tokens(
             right = mid - 1
 
     # idx now contains the maximum number of complete messages we can include
+    # 中文: idx 现在包含我们可以包含的完整消息的最大数量
     idx = left
 
     if partial_strategy and idx < len(messages):
@@ -1628,6 +2262,7 @@ def _first_max_tokens(
                 copied = True
 
             # Extract text content efficiently
+            # 中文: 高效提取文本内容
             text = None
             if isinstance(excluded.content, str):
                 text = excluded.content
@@ -1650,6 +2285,7 @@ def _first_max_tokens(
                     split_texts = list(reversed(split_texts))
 
                 # Binary search for the maximum number of splits we can include
+                # 中文: 二分搜索我们可以包含的最大分割数
                 left, right = 0, len(split_texts)
                 max_iterations = len(split_texts).bit_length()
                 for _ in range(max_iterations):
@@ -1696,6 +2332,7 @@ def _last_max_tokens(
         return []
 
     # Filter out messages after end_on type
+    # 中文: 过滤掉end_on类型之后的消息
     if end_on:
         for _ in range(len(messages)):
             if not _is_message_type(messages[-1], end_on):
@@ -1704,15 +2341,18 @@ def _last_max_tokens(
                 break
 
     # Handle system message preservation
+    # 中文: 处理系统消息保存
     system_message = None
     if include_system and len(messages) > 0 and isinstance(messages[0], SystemMessage):
         system_message = messages[0]
         messages = messages[1:]
 
     # Reverse messages to use _first_max_tokens with reversed logic
+    # 中文: 反向消息以使用具有反向逻辑的 _first_max_tokens
     reversed_messages = messages[::-1]
 
     # Calculate remaining tokens after accounting for system message if present
+    # 中文: 考虑系统消息（如果存在）后计算剩余令牌
     remaining_tokens = max_tokens
     if system_message:
         system_tokens = token_counter([system_message])
@@ -1728,6 +2368,7 @@ def _last_max_tokens(
     )
 
     # Re-reverse the messages and add back the system message if needed
+    # 中文: 如果需要，重新反转消息并添加回系统消息
     result = reversed_result[::-1]
     if system_message:
         result = [system_message, *result]
@@ -1878,7 +2519,32 @@ def count_tokens_approximately(
         This function does not currently support counting image tokens.
 
     !!! version-added "Added in `langchain-core` 0.3.46"
-    """
+    
+
+    中文翻译:
+    估计消息中令牌的总数。
+    令牌计数包括字符串化消息内容、角色和（可选）名称。
+    - 对于 AI 消息，令牌计数还包括字符串化工具调用。
+    - 对于工具消息，令牌计数还包括工具调用 ID。
+    参数：
+        messages：要计算令牌的消息列表。
+        chars_per_token：用于近似的每个标记的字符数。
+            对于常见的英语文本，1 个标记对应约 4 个字符。
+            您还可以指定“float”值以进行更细粒度的控制。
+            [在此处查看更多信息](https://platform.openai.com/tokenizer)。
+        extra_tokens_per_message：每条消息添加的额外令牌的数量，例如
+            特殊标记，包括消息的开始/结束。
+            您还可以指定“float”值以进行更细粒度的控制。
+            [在此处查看更多信息](https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb)。
+        count_name：计数中是否包含消息名称。
+    返回：
+        消息中令牌的大致数量。
+    注意：
+        这是一个简单的近似值，可能与所使用的确切令牌计数不匹配
+        具体型号。为了获得准确的计数，请使用特定于模型的分词器。
+    警告：
+        该功能目前不支持对图像token进行计数。
+    ！！！ version-added “在 `langchain-core` 0.3.46 中添加”"""
     token_count = 0.0
     for message in convert_to_messages(messages):
         message_chars = 0
@@ -1893,6 +2559,7 @@ def count_tokens_approximately(
         if (
             isinstance(message, AIMessage)
             # exclude Anthropic format as tool calls are already included in the content
+            # 中文: 排除 Anthropic 格式，因为工具调用已包含在内容中
             and not isinstance(message.content, list)
             and message.tool_calls
         ):
@@ -1910,19 +2577,27 @@ def count_tokens_approximately(
 
         # NOTE: we're rounding up per message to ensure that
         # individual message token counts add up to the total count
+        # 中文: 单个消息令牌计数加起来等于总计数
         # for a list of messages
+        # 中文: 获取消息列表
         token_count += math.ceil(message_chars / chars_per_token)
 
         # add extra tokens per message
+        # 中文: 为每条消息添加额外的令牌
         token_count += extra_tokens_per_message
 
     # round up once more time in case extra_tokens_per_message is a float
+    # 中文: 如果 extra_tokens_per_message 是浮点数，则再次四舍五入
     return math.ceil(token_count)
 
 
 # Mapping from string shortcuts to token counter functions
+# 中文: 从字符串快捷方式到令牌计数器函数的映射
 def _approximate_token_counter(messages: Sequence[BaseMessage]) -> int:
-    """Wrapper for `count_tokens_approximately` that matches expected signature."""
+    """Wrapper for `count_tokens_approximately` that matches expected signature.
+
+    中文翻译:
+    与预期签名匹配的“count_tokens_approximately”的包装器。"""
     return count_tokens_approximately(messages)
 
 

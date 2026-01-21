@@ -4,6 +4,7 @@ Provides `dumps` (to JSON string) and `dumpd` (to dict) for serializing
 `Serializable` objects.
 
 ## Escaping
+#中文: # 转义
 
 During serialization, plain dicts (user data) that contain an `'lc'` key are escaped
 by wrapping them: `{"__lc_escaped__": {...original...}}`. This prevents injection
@@ -13,6 +14,19 @@ arbitrary classes. The escape marker is removed during deserialization.
 This is an allowlist approach: only dicts explicitly produced by
 `Serializable.to_json()` are treated as LC objects; everything else is escaped if it
 could be confused with the LC format.
+
+中文翻译:
+将 LangChain 对象序列化为 JSON。
+提供用于序列化的“dumps”（到 JSON 字符串）和“dumpd”（到 dict）
+“可序列化”对象。
+## 逃脱
+在序列化期间，包含“lc”键的普通字典（用户数据）被转义
+通过包装它们：`{"__lc_escaped__": {...original...}}`。这可以防止注入
+恶意数据可能诱骗解串器实例化的攻击
+任意类。转义标记在反序列化期间被删除。
+这是一种白名单方法：仅由以下人员明确生成的字典
+`Serialized.to_json()` 被视为 LC 对象；如果是的话，其他一切都会被转义
+可能会与 LC 格式混淆。
 """
 
 import json
@@ -34,7 +48,14 @@ def default(obj: Any) -> Any:
 
     Returns:
         A JSON serializable object or a SerializedNotImplemented object.
-    """
+    
+
+    中文翻译:
+    返回对象的默认值。
+    参数：
+        obj：如果是可序列化对象，则要序列化为 json 的对象。
+    返回：
+        JSON 可序列化对象或 SerializedNotImplemented 对象。"""
     if isinstance(obj, Serializable):
         return obj.to_json()
     return to_json_not_implemented(obj)
@@ -54,7 +75,19 @@ def _dump_pydantic_models(obj: Any) -> Any:
     Returns:
         A copy of the object with nested Pydantic models converted to dicts, or
             the original object unchanged if no conversion was needed.
-    """
+    
+
+    中文翻译:
+    将嵌套 Pydantic 模型转换为字典以进行 JSON 序列化。
+    处理“ChatGeneration”包含“AIMessage”的特殊情况
+    在 `additional_kwargs["parsed"]` 中使用已解析的 Pydantic 模型。自从
+    Pydantic 模型不能直接 JSON 序列化，这会将它们转换为
+    听写。
+    参数：
+        obj：要处理的对象。
+    返回：
+        具有转换为字典的嵌套 Pydantic 模型的对象的副本，或
+            如果不需要转换，则原始对象不变。"""
     if (
         isinstance(obj, ChatGeneration)
         and isinstance(obj.message, AIMessage)
@@ -88,7 +121,24 @@ def dumps(obj: Any, *, pretty: bool = False, **kwargs: Any) -> str:
 
     Raises:
         ValueError: If `default` is passed as a kwarg.
-    """
+    
+
+    中文翻译:
+    返回对象的 JSON 字符串表示形式。
+    注意：
+        包含“lc”键的普通字典会自动转义以防止
+        与 LC 序列化格式混淆。转义标记在期间被删除
+        反序列化。
+    参数：
+        obj：要转储的对象。
+        Pretty: 是否漂亮地打印 json。
+            如果为“True”，则 json 将缩进 2 个空格或数量
+            在 `indent` kwarg 中提供。
+        **kwargs：传递给 `json.dumps` 的附加参数
+    返回：
+        对象的 JSON 字符串表示形式。
+    加薪：
+        ValueError：如果“default”作为 kwarg 传递。"""
     if "default" in kwargs:
         msg = "`default` should not be passed to dumps"
         raise ValueError(msg)
@@ -115,6 +165,17 @@ def dumpd(obj: Any) -> Any:
 
     Returns:
         Dictionary that can be serialized to json using `json.dumps`.
-    """
+    
+
+    中文翻译:
+    返回对象的字典表示。
+    注意：
+        包含“lc”键的普通字典会自动转义以防止
+        与 LC 序列化格式混淆。转义标记在期间被删除
+        反序列化。
+    参数：
+        obj：要转储的对象。
+    返回：
+        可以使用“json.dumps”序列化为 json 的字典。"""
     obj = _dump_pydantic_models(obj)
     return _serialize_value(obj)

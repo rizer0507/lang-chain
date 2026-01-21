@@ -1,4 +1,7 @@
-"""Derivations of standard content blocks from OpenAI content."""
+"""Derivations of standard content blocks from OpenAI content.
+
+中文翻译:
+来自 OpenAI 内容的标准内容块的派生。"""
 
 from __future__ import annotations
 
@@ -30,7 +33,17 @@ def convert_to_openai_image_block(block: dict[str, Any]) -> dict:
 
     Returns:
         The formatted image content block.
-    """
+    
+
+    中文翻译:
+    将“ImageContentBlock”转换为 OpenAI 聊天完成所需的格式。
+    参数：
+        block：要转换的图像内容块。
+    加薪：
+        ValueError：如果缺少所需的键。
+        ValueError：如果源类型不受支持。
+    返回：
+        格式化的图像内容块。"""
     if "url" in block:
         return {
             "type": "image_url",
@@ -73,7 +86,21 @@ def convert_to_openai_data_block(
 
     Returns:
         The formatted content block.
-    """
+    
+
+    中文翻译:
+    将标准数据内容块格式化为 OpenAI 期望的格式。
+    “标准数据内容区块”可以包含旧式LangChain v0区块
+    （URLContentBlock、Base64ContentBlock、IDContentBlock）或新的。
+    参数：
+        block：要转换的内容块。
+        api：目标 OpenAI API。 “聊天/完成”或“回复”。
+    加薪：
+        ValueError：如果缺少所需的键。
+        ValueError：如果文件 URL 与聊天完成 API 一起使用。
+        ValueError：如果块类型不受支持。
+    返回：
+        格式化的内容块。"""
     if block["type"] == "image":
         chat_completions_block = convert_to_openai_image_block(block)
         if api == "responses":
@@ -100,9 +127,11 @@ def convert_to_openai_data_block(
                 file["filename"] = extras["filename"]
             elif (extras := block.get("metadata")) and ("filename" in extras):
                 # Backward compat
+                # 中文: 向后兼容
                 file["filename"] = extras["filename"]
             else:
                 # Can't infer filename
+                # 中文: 无法推断文件名
                 warnings.warn(
                     "OpenAI may require a filename for file uploads. Specify a filename"
                     " in the content block, e.g.: {'type': 'file', 'mime_type': "
@@ -124,6 +153,7 @@ def convert_to_openai_data_block(
                 error_msg = "OpenAI Chat Completions does not support file URLs."
                 raise ValueError(error_msg)
             # Only supported by Responses API; return in that format
+            # 中文: 仅由 Responses API 支持；以该格式返回
             formatted_block = {"type": "input_file", "file_url": block["url"]}
         else:
             error_msg = "Keys base64, url, or file_id required for file blocks."
@@ -150,10 +180,14 @@ def convert_to_openai_data_block(
 
 
 # v1 / Chat Completions
+# 中文: v1 / 聊天完成
 def _convert_to_v1_from_chat_completions(
     message: AIMessage,
 ) -> list[types.ContentBlock]:
-    """Mutate a Chat Completions message to v1 format."""
+    """Mutate a Chat Completions message to v1 format.
+
+    中文翻译:
+    将聊天完成消息更改为 v1 格式。"""
     content_blocks: list[types.ContentBlock] = []
     if isinstance(message.content, str):
         if message.content:
@@ -191,7 +225,19 @@ def _convert_to_v1_from_chat_completions_input(
 
     Returns:
         Updated list with OpenAI blocks converted to v1 format.
-    """
+    
+
+    中文翻译:
+    将 OpenAI 聊天完成格式块转换为 v1 格式。
+    在 `content_blocks` 解析过程中，我们包装未被识别为 v1 的块
+    块作为“非标准”块，原始块存储在“值”中
+    场。该函数尝试解压这些块并转换任何块
+    可能是 v1 ContentBlocks 的 OpenAI 格式。
+    如果转换失败，该块将保留为“non_standard”块。
+    参数：
+        content：要处理的内容块列表。
+    返回：
+        更新了 OpenAI 块转换为 v1 格式的列表。"""
     from langchain_core.messages import content as types  # noqa: PLC0415
 
     converted_blocks = []
@@ -209,6 +255,7 @@ def _convert_to_v1_from_chat_completions_input(
         } and is_openai_data_block(block):
             converted_block = _convert_openai_format_to_data_block(block)
             # If conversion succeeded, use it; otherwise keep as non_standard
+            # 中文: 如果转换成功，则使用；否则保持为non_standard
             if (
                 isinstance(converted_block, dict)
                 and converted_block.get("type") in types.KNOWN_BLOCK_TYPES
@@ -227,7 +274,10 @@ def _convert_to_v1_from_chat_completions_input(
 def _convert_to_v1_from_chat_completions_chunk(
     chunk: AIMessageChunk,
 ) -> list[types.ContentBlock]:
-    """Mutate a Chat Completions chunk to v1 format."""
+    """Mutate a Chat Completions chunk to v1 format.
+
+    中文翻译:
+    将聊天完成块更改为 v1 格式。"""
     content_blocks: list[types.ContentBlock] = []
     if isinstance(chunk.content, str):
         if chunk.content:
@@ -262,7 +312,10 @@ def _convert_to_v1_from_chat_completions_chunk(
 
 
 def _convert_from_v1_to_chat_completions(message: AIMessage) -> AIMessage:
-    """Convert a v1 message to the Chat Completions format."""
+    """Convert a v1 message to the Chat Completions format.
+
+    中文翻译:
+    将 v1 消息转换为聊天完成格式。"""
     if isinstance(message.content, list):
         new_content: list = []
         for block in message.content:
@@ -270,6 +323,7 @@ def _convert_from_v1_to_chat_completions(message: AIMessage) -> AIMessage:
                 block_type = block.get("type")
                 if block_type == "text":
                     # Strip annotations
+                    # 中文: 剥离注释
                     new_content.append({"type": "text", "text": block["text"]})
                 elif block_type in {"reasoning", "tool_call"}:
                     pass
@@ -283,14 +337,19 @@ def _convert_from_v1_to_chat_completions(message: AIMessage) -> AIMessage:
 
 
 # Responses
+# 中文: 回应
 _FUNCTION_CALL_IDS_MAP_KEY = "__openai_function_call_ids__"
 
 
 def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
-    """Convert v0 AIMessage into `output_version="responses/v1"` format."""
+    """Convert v0 AIMessage into `output_version="responses/v1"` format.
+
+    中文翻译:
+    将 v0 AIMessage 转换为 `output_version="responses/v1"` 格式。"""
     from langchain_core.messages import AIMessageChunk  # noqa: PLC0415
 
     # Only update ChatOpenAI v0.3 AIMessages
+    # 中文: 仅更新 ChatOpenAI v0.3 AIMessages
     is_chatopenai_v03 = (
         isinstance(message.content, list)
         and all(isinstance(b, dict) for b in message.content)
@@ -327,14 +386,18 @@ def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
         "mcp_list_tools",
         "mcp_approval_request",
         # N. B. "web_search_call" and "file_search_call" were not passed back in
+        # 中文: 注意：“web_search_call”和“file_search_call”没有传回
         # in v0.3
+        # 中文: 在 v0.3 中
     ]
 
     # Build a bucket for every known block type
+    # 中文: 为每个已知的块类型构建一个存储桶
     buckets: dict[str, list] = {key: [] for key in content_order}
     unknown_blocks = []
 
     # Reasoning
+    # 中文: 推理
     if reasoning := message.additional_kwargs.get("reasoning"):
         if isinstance(message, AIMessageChunk) and message.chunk_position != "last":
             buckets["reasoning"].append({**reasoning, "type": "reasoning"})
@@ -342,10 +405,12 @@ def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
             buckets["reasoning"].append(reasoning)
 
     # Refusal
+    # 中文: 拒绝
     if refusal := message.additional_kwargs.get("refusal"):
         buckets["refusal"].append({"type": "refusal", "refusal": refusal})
 
     # Text
+    # 中文: 文本
     for block in message.content:
         if isinstance(block, dict) and block.get("type") == "text":
             block_copy = block.copy()
@@ -356,6 +421,7 @@ def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
             unknown_blocks.append(block)
 
     # Function calls
+    # 中文: 函数调用
     function_call_ids = message.additional_kwargs.get(_FUNCTION_CALL_IDS_MAP_KEY)
     if (
         isinstance(message, AIMessageChunk)
@@ -363,6 +429,7 @@ def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
         and message.chunk_position != "last"
     ):
         # Isolated chunk
+        # 中文: 孤立的块
         tool_call_chunk = message.tool_call_chunks[0]
         function_call = {
             "type": "function_call",
@@ -390,6 +457,7 @@ def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
             buckets["function_call"].append(function_call)
 
     # Tool outputs
+    # 中文: 工具输出
     tool_outputs = message.additional_kwargs.get("tool_outputs", [])
     for block in tool_outputs:
         if isinstance(block, dict) and (key := block.get("type")) and key in buckets:
@@ -398,6 +466,7 @@ def _convert_from_v03_ai_message(message: AIMessage) -> AIMessage:
             unknown_blocks.append(block)
 
     # Re-assemble the content list in the canonical order
+    # 中文: 按规范顺序重新组合内容列表
     new_content = []
     for key in content_order:
         new_content.extend(buckets[key])
@@ -438,14 +507,29 @@ def _convert_openai_format_to_data_block(
     - Audio -> `AudioContentBlock`
     - File -> `FileContentBlock`
 
-    """
+    
+
+    中文翻译:
+    将 OpenAI 图像/音频/文件内容块转换为相应的 v1 多模态块。
+    我们期望传入的区块被验证为在 OpenAI 聊天完成中
+    格式。
+    如果解析失败，则原封不动地通过块。
+    映射（聊天完成到 LangChain v1）：
+    - 图像 -> `ImageContentBlock`
+    - 音频 -> `AudioContentBlock`
+    - 文件 -> `FileContentBlock`"""
 
     # Extract extra keys to put them in `extras`
+    # 中文: 提取额外的密钥并将其放入“extras”中
     def _extract_extras(block_dict: dict, known_keys: set[str]) -> dict[str, Any]:
-        """Extract unknown keys from block to preserve as extras."""
+        """Extract unknown keys from block to preserve as extras.
+
+        中文翻译:
+        从块中提取未知密钥以保存为额外内容。"""
         return {k: v for k, v in block_dict.items() if k not in known_keys}
 
     # base64-style image block
+    # 中文: Base64 风格的图像块
     if (block["type"] == "image_url") and (
         parsed := _parse_data_uri(block["image_url"]["url"])
     ):
@@ -453,10 +537,12 @@ def _convert_openai_format_to_data_block(
         extras = _extract_extras(block, known_keys)
 
         # Also extract extras from nested image_url dict
+        # 中文: 还可以从嵌套的 image_url 字典中提取额外内容
         image_url_known_keys = {"url"}
         image_url_extras = _extract_extras(block["image_url"], image_url_known_keys)
 
         # Merge extras
+        # 中文: 合并额外内容
         all_extras = {**extras}
         for key, value in image_url_extras.items():
             if key == "detail":  # Don't rename
@@ -466,12 +552,14 @@ def _convert_openai_format_to_data_block(
 
         return types.create_image_block(
             # Even though this is labeled as `url`, it can be base64-encoded
+            # 中文: 即使它被标记为“url”，它也可以进行 base64 编码
             base64=parsed["data"],
             mime_type=parsed["mime_type"],
             **all_extras,
         )
 
     # url-style image block
+    # 中文: url 样式图像块
     if (block["type"] == "image_url") and isinstance(
         block["image_url"].get("url"), str
     ):
@@ -494,12 +582,15 @@ def _convert_openai_format_to_data_block(
         )
 
     # base64-style audio block
+    # 中文: Base64 风格的音频块
     # audio is only represented via raw data, no url or ID option
+    # 中文: 音频仅通过原始数据表示，没有 url 或 ID 选项
     if block["type"] == "input_audio":
         known_keys = {"type", "input_audio"}
         extras = _extract_extras(block, known_keys)
 
         # Also extract extras from nested audio dict
+        # 中文: 还可以从嵌套音频字典中提取额外内容
         audio_known_keys = {"data", "format"}
         audio_extras = _extract_extras(block["input_audio"], audio_known_keys)
 
@@ -514,6 +605,7 @@ def _convert_openai_format_to_data_block(
         )
 
     # id-style file block
+    # 中文: id 样式文件块
     if block.get("type") == "file" and "file_id" in block.get("file", {}):
         known_keys = {"type", "file"}
         extras = _extract_extras(block, known_keys)
@@ -531,6 +623,7 @@ def _convert_openai_format_to_data_block(
         )
 
     # base64-style file block
+    # 中文: Base64 风格的文件块
     if (block["type"] == "file") and (
         parsed := _parse_data_uri(block["file"]["file_data"])
     ):
@@ -553,10 +646,12 @@ def _convert_openai_format_to_data_block(
         )
 
     # Escape hatch
+    # 中文: 逃生舱口
     return block
 
 
 # v1 / Responses
+# 中文: v1 / 回应
 def _convert_annotation_to_v1(annotation: dict[str, Any]) -> types.Annotation:
     annotation_type = annotation.get("type")
 
@@ -634,9 +729,11 @@ def _explode_reasoning(block: dict[str, Any]) -> Iterable[types.ReasoningContent
         return
 
     # Common part for every exploded line, except 'summary'
+    # 中文: 除“摘要”外，每个分解行的公共部分
     common = {k: v for k, v in block.items() if k in known_fields}
 
     # Optional keys that must appear only in the first exploded item
+    # 中文: 必须仅出现在第一个分解项目中的可选键
     first_only = block.pop("extras", None)
 
     for idx, part in enumerate(block["summary"]):
@@ -653,7 +750,10 @@ def _explode_reasoning(block: dict[str, Any]) -> Iterable[types.ReasoningContent
 
 
 def _convert_to_v1_from_responses(message: AIMessage) -> list[types.ContentBlock]:
-    """Convert a Responses message to v1 format."""
+    """Convert a Responses message to v1 format.
+
+    中文翻译:
+    将响应消息转换为 v1 格式。"""
 
     def _iter_blocks() -> Iterable[types.ContentBlock]:
         for raw_block in message.content:
@@ -762,6 +862,7 @@ def _convert_to_v1_from_responses(message: AIMessage) -> list[types.ContentBlock
                 yield cast("types.ServerToolCall", web_search_call)
 
                 # If .content already has web_search_result, don't add
+                # 中文: 如果 .content 已经有 web_search_result，则不要添加
                 if not any(
                     isinstance(other_block, dict)
                     and other_block.get("type") == "web_search_result"
@@ -1003,7 +1104,14 @@ def translate_content(message: AIMessage) -> list[types.ContentBlock]:
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从包含 OpenAI 内容的消息中派生标准内容块。
+    参数：
+        message：要翻译的消息。
+    返回：
+        派生的内容块。"""
     if isinstance(message.content, str):
         return _convert_to_v1_from_chat_completions(message)
     message = _convert_from_v03_ai_message(message)
@@ -1018,7 +1126,14 @@ def translate_content_chunk(message: AIMessageChunk) -> list[types.ContentBlock]
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从包含 OpenAI 内容的消息块中派生标准内容块。
+    参数：
+        message：要翻译的消息块。
+    返回：
+        派生的内容块。"""
     if isinstance(message.content, str):
         return _convert_to_v1_from_chat_completions_chunk(message)
     message = _convert_from_v03_ai_message(message)  # type: ignore[assignment]
@@ -1029,7 +1144,11 @@ def _register_openai_translator() -> None:
     """Register the OpenAI translator with the central registry.
 
     Run automatically when the module is imported.
-    """
+    
+
+    中文翻译:
+    向中央注册表注册 OpenAI 翻译器。
+    导入模块时自动运行。"""
     from langchain_core.messages.block_translators import (  # noqa: PLC0415
         register_translator,
     )

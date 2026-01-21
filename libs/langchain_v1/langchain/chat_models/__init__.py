@@ -1,4 +1,7 @@
-"""Entrypoint to using [chat models](https://docs.langchain.com/oss/python/langchain/models) in LangChain."""  # noqa: E501
+"""Entrypoint to using [chat models](https://docs.langchain.com/oss/python/langchain/models) in LangChain.
+
+中文翻译:
+在LangChain中使用[聊天模型](https://docs.langchain.com/oss/python/langchain/models)的入口点。"""  # noqa: E501
 
 from langchain_core.language_models import BaseChatModel
 

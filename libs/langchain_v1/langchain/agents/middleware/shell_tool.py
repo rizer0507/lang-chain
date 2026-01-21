@@ -1,4 +1,40 @@
-"""Middleware that exposes a persistent shell tool to agents."""
+"""Shell 工具中间件模块，为 Agent 提供持久化 Shell 会话能力。
+
+本模块提供一个持久化的 Shell 工具，允许 Agent 执行命令行操作。
+
+核心类:
+--------
+**ShellToolMiddleware**: Shell 工具中间件
+**ShellSession**: 持久化 Shell 会话
+
+执行策略:
+---------
+- `HostExecutionPolicy`: 完全主机访问（受信环境）
+- `CodexSandboxExecutionPolicy`: Codex CLI 沙箱
+- `DockerExecutionPolicy`: Docker 容器隔离
+
+功能特性:
+---------
+- 持久化会话（保持工作目录状态）
+- 启动/关闭命令
+- 输出脱敏规则
+- 超时控制
+
+使用示例:
+---------
+>>> from langchain.agents import create_agent
+>>> from langchain.agents.middleware import ShellToolMiddleware
+>>>
+>>> shell = ShellToolMiddleware(
+...     workspace_root="/workspace",
+...     startup_commands=["cd /workspace"],
+... )
+>>>
+>>> agent = create_agent(
+...     model="openai:gpt-4o",
+...     middleware=[shell],
+... )
+"""
 
 from __future__ import annotations
 
@@ -73,7 +109,10 @@ def _cleanup_resources(
 
 @dataclass
 class _SessionResources:
-    """Container for per-run shell resources."""
+    """Container for per-run shell resources.
+
+    中文翻译:
+    每次运行的 shell 资源的容器。"""
 
     session: ShellSession
     tempdir: tempfile.TemporaryDirectory[str] | None
@@ -91,7 +130,10 @@ class _SessionResources:
 
 
 class ShellToolState(AgentState):
-    """Agent state extension for tracking shell session resources."""
+    """Agent state extension for tracking shell session resources.
+
+    中文翻译:
+    用于跟踪 shell 会话资源的代理状态扩展。"""
 
     shell_session_resources: NotRequired[
         Annotated[_SessionResources | None, UntrackedValue, PrivateStateAttr]
@@ -100,7 +142,10 @@ class ShellToolState(AgentState):
 
 @dataclass(frozen=True)
 class CommandExecutionResult:
-    """Structured result from command execution."""
+    """Structured result from command execution.
+
+    中文翻译:
+    命令执行的结构化结果。"""
 
     output: str
     exit_code: int | None
@@ -112,7 +157,10 @@ class CommandExecutionResult:
 
 
 class ShellSession:
-    """Persistent shell session that supports sequential command execution."""
+    """Persistent shell session that supports sequential command execution.
+
+    中文翻译:
+    支持顺序命令执行的持久 shell 会话。"""
 
     def __init__(
         self,
@@ -134,7 +182,10 @@ class ShellSession:
         self._terminated = False
 
     def start(self) -> None:
-        """Start the shell subprocess and reader threads."""
+        """Start the shell subprocess and reader threads.
+
+        中文翻译:
+        启动 shell 子进程和读取器线程。"""
         if self._process and self._process.poll() is None:
             return
 
@@ -169,12 +220,18 @@ class ShellSession:
         self._stderr_thread.start()
 
     def restart(self) -> None:
-        """Restart the shell process."""
+        """Restart the shell process.
+
+        中文翻译:
+        重新启动外壳进程。"""
         self.stop(self._policy.termination_timeout)
         self.start()
 
     def stop(self, timeout: float) -> None:
-        """Stop the shell subprocess."""
+        """Stop the shell subprocess.
+
+        中文翻译:
+        停止 shell 子进程。"""
         if not self._process:
             return
 
@@ -200,7 +257,10 @@ class ShellSession:
             self._process = None
 
     def execute(self, command: str, *, timeout: float) -> CommandExecutionResult:
-        """Execute a command in the persistent shell."""
+        """Execute a command in the persistent shell.
+
+        中文翻译:
+        在持久 shell 中执行命令。"""
         if not self._process or self._process.poll() is not None:
             msg = "Shell session is not running."
             raise RuntimeError(msg)
@@ -217,7 +277,9 @@ class ShellSession:
                 self._stdin.flush()
             except (BrokenPipeError, OSError):
                 # The shell exited before we could write the marker command.
+                # 中文: 在我们编写标记命令之前 shell 就退出了。
                 # This happens when commands like 'exit 1' terminate the shell.
+                # 中文: 当“exit 1”等命令终止 shell 时，就会发生这种情况。
                 return self._collect_output_after_exit(deadline)
 
             return self._collect_output(marker, deadline, timeout)
@@ -254,8 +316,11 @@ class ShellSession:
                 _, _, status = data.partition(" ")
                 exit_code = self._safe_int(status.strip())
                 # Drain any remaining stderr that may have arrived concurrently.
+                # 中文: 排出可能同时到达的所有剩余 stderr。
                 # The stderr reader thread runs independently, so output might
+                # 中文: stderr 读取器线程独立运行，因此输出可能
                 # still be in flight when the stdout marker arrives.
+                # 中文: 当标准输出标记到达时仍在飞行中。
                 self._drain_remaining_stderr(collected, deadline)
                 break
 
@@ -320,7 +385,16 @@ class ShellSession:
 
         Returns:
             `CommandExecutionResult` with collected output and the process exit code.
-        """
+        
+
+        中文翻译:
+        收集 shell 意外退出后的输出。
+        当写入 stdin 时发生 `BrokenPipeError` 时调用，指示
+        shell 进程终止（例如，由于“退出”命令）。
+        参数：
+            截止日期：收集必须完成的绝对时间。
+        返回：
+            “CommandExecutionResult”包含收集的输出和进程退出代码。"""
         collected: list[str] = []
         total_lines = 0
         total_bytes = 0
@@ -328,6 +402,7 @@ class ShellSession:
         truncated_by_bytes = False
 
         # Give reader threads a brief moment to enqueue any remaining output.
+        # 中文: 给读者线程一点时间来将任何剩余的输出排队。
         drain_timeout = 0.1
         drain_deadline = min(time.monotonic() + drain_timeout, deadline)
 
@@ -342,6 +417,7 @@ class ShellSession:
 
             if data is None:
                 # EOF marker from a reader thread; continue draining.
+                # 中文: 来自读取器线程的 EOF 标记；继续排水。
                 continue
 
             total_lines += 1
@@ -368,6 +444,7 @@ class ShellSession:
                 collected.append(data)
 
         # Get exit code from the terminated process.
+        # 中文: 从终止的进程中获取退出代码。
         exit_code: int | None = None
         if self._process:
             exit_code = self._process.poll()
@@ -420,7 +497,18 @@ class ShellSession:
             collected: The list to append collected stderr lines to.
             deadline: The original command deadline (used as an upper bound).
             drain_timeout: Maximum time to wait for additional stderr output.
-        """
+        
+
+        中文翻译:
+        排出与完成标记同时到达的所有 stderr 输出。
+        stdout 和 stderr 读取器线程独立运行。当命令写入
+        在退出之前的 stderr 时，stderr 输出可能仍在传输中
+        完成标记到达标准输出。该方法简单轮询队列来捕获
+        这样的输出。
+        参数：
+            Collected：将收集的 stderr 行附加到的列表。
+            Deadline：原始命令的截止时间（用作上限）。
+            rain_timeout：等待额外 stderr 输出的最长时间。"""
         drain_deadline = min(time.monotonic() + drain_timeout, deadline)
         while True:
             remaining = drain_deadline - time.monotonic()
@@ -445,20 +533,34 @@ class ShellSession:
 
 
 class _ShellToolInput(BaseModel):
-    """Input schema for the persistent shell tool."""
+    """Input schema for the persistent shell tool.
+
+    中文翻译:
+    持久 shell 工具的输入架构。"""
 
     command: str | None = None
-    """The shell command to execute."""
+    """The shell command to execute.
+
+    中文翻译:
+    要执行的 shell 命令。"""
 
     restart: bool | None = None
-    """Whether to restart the shell session."""
+    """Whether to restart the shell session.
+
+    中文翻译:
+    是否重新启动 shell 会话。"""
 
     runtime: Annotated[Any, SkipJsonSchema()] = None
     """The runtime for the shell tool.
 
     Included as a workaround at the moment bc args_schema doesn't work with
     injected ToolRuntime.
-    """
+    
+
+    中文翻译:
+    shell 工具的运行时。
+    目前作为解决方法包含在内 bc args_schema 不适用于
+    注入的 ToolRuntime。"""
 
     @model_validator(mode="after")
     def validate_payload(self) -> _ShellToolInput:
@@ -486,7 +588,20 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
         remapping.
 
     When no policy is provided the middleware defaults to `HostExecutionPolicy`.
-    """
+    
+
+    中文翻译:
+    为代理注册持久 shell 工具的中间件。
+    中间件公开一个长期存在的 shell 会话。使用执行策略
+    为了匹配您的部署的安全状况：
+    * `HostExecutionPolicy` – 完全主机访问；最适合受信任的环境，其中
+        代理已在提供隔离的容器或虚拟机内运行。
+    * `CodexSandboxExecutionPolicy` – 重用 Codex CLI 沙箱以获得额外的
+        CLI 可用时的系统调用/文件系统限制。
+    * `DockerExecutionPolicy` – 为每个代理运行启动一个单独的 Docker 容器，
+        提供更严格的隔离、可选的只读根文件系统和用户
+        重新映射。
+    当未提供策略时，中间件默认为“HostExecutionPolicy”。"""
 
     state_schema = ShellToolState
 
@@ -538,7 +653,36 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
 
                 Values are coerced to strings before command execution. If omitted, the
                 session inherits the parent process environment.
-        """
+        
+
+        中文翻译:
+        初始化`ShellToolMiddleware`的实例。
+        参数：
+            workspace_root：shell 会话的基目录。
+                如果省略，则在代理启动时创建一个临时目录并
+                结束时删除。
+            startup_commands：会话后按顺序执行的可选命令
+                开始。
+            shutdown_commands：会话关闭之前执行的可选命令。
+            execution_policy：控制超时、输出限制和
+                资源配置。
+                默认为“HostExecutionPolicy”以进行本机执行。
+            redaction_rules：可选的编辑规则，用于在之前清理命令输出
+                将其返回给模型。
+                !!!警告
+                    编辑规则在执行后应用，不会阻止
+                    使用时泄露机密或敏感数据
+                    `主机执行策略`。
+            tool_description：已注册 shell 工具的可选覆盖
+                描述。
+            tool_name：注册的 shell 工具的名称。
+                默认为“shell”。
+            shell_command：可选的 shell 可执行文件（字符串）或使用的参数序列
+                启动持久会话。
+                默认为实现定义的 bash 命令。
+            env：提供给 shell 会话的可选环境变量。
+                在命令执行之前，值被强制转换为字符串。如果省略，则
+                session继承父进程环境。"""
         super().__init__()
         self._workspace_root = Path(workspace_root) if workspace_root else None
         self._tool_name = tool_name
@@ -556,6 +700,7 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
         self._shutdown_commands = self._normalize_commands(shutdown_commands)
 
         # Create a proper tool that executes directly (no interception needed)
+        # 中文: 创建一个直接执行的适当工具（不需要拦截）
         description = tool_description or DEFAULT_TOOL_DESCRIPTION
 
         @tool(self._tool_name, args_schema=_ShellToolInput, description=description)
@@ -611,20 +756,30 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
 
     @override
     def before_agent(self, state: ShellToolState, runtime: Runtime) -> dict[str, Any] | None:
-        """Start the shell session and run startup commands."""
+        """Start the shell session and run startup commands.
+
+        中文翻译:
+        启动 shell 会话并运行启动命令。"""
         resources = self._get_or_create_resources(state)
         return {"shell_session_resources": resources}
 
     async def abefore_agent(self, state: ShellToolState, runtime: Runtime) -> dict[str, Any] | None:
-        """Async start the shell session and run startup commands."""
+        """Async start the shell session and run startup commands.
+
+        中文翻译:
+        异步启动 shell 会话并运行启动命令。"""
         return self.before_agent(state, runtime)
 
     @override
     def after_agent(self, state: ShellToolState, runtime: Runtime) -> None:
-        """Run shutdown commands and release resources when an agent completes."""
+        """Run shutdown commands and release resources when an agent completes.
+
+        中文翻译:
+        运行关闭命令并在代理完成时释放资源。"""
         resources = state.get("shell_session_resources")
         if not isinstance(resources, _SessionResources):
             # Resources were never created, nothing to clean up
+            # 中文: 资源从未被创建，无需清理
             return
         try:
             self._run_shutdown_commands(resources.session)
@@ -632,7 +787,10 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
             resources.finalizer()
 
     async def aafter_agent(self, state: ShellToolState, runtime: Runtime) -> None:
-        """Async run shutdown commands and release resources when an agent completes."""
+        """Async run shutdown commands and release resources when an agent completes.
+
+        中文翻译:
+        异步运行关闭命令并在代理完成时释放资源。"""
         return self.after_agent(state, runtime)
 
     def _get_or_create_resources(self, state: ShellToolState) -> _SessionResources:
@@ -646,13 +804,23 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
 
         Returns:
             Session resources, either retrieved from state or newly created.
-        """
+        
+
+        中文翻译:
+        从状态获取现有资源或创建新资源（如果不存在）。
+        此方法通过检查状态中是否已存在资源来实现可恢复性
+        （例如，在中断之后），并且仅在新资源不存在时才创建它们。
+        参数：
+            state：代理状态，可能包含 shell 会话资源。
+        返回：
+            会话资源，从状态检索或新创建。"""
         resources = state.get("shell_session_resources")
         if isinstance(resources, _SessionResources):
             return resources
 
         new_resources = self._create_resources()
         # Cast needed to make state dict-like for mutation
+        # 中文: 需要强制转换才能使状态类似于字典以进行突变
         cast("dict[str, Any]", state)["shell_session_resources"] = new_resources
         return new_resources
 
@@ -712,7 +880,10 @@ class ShellToolMiddleware(AgentMiddleware[ShellToolState, Any]):
                 )
 
     def _apply_redactions(self, content: str) -> tuple[str, dict[str, list[PIIMatch]]]:
-        """Apply configured redaction rules to command output."""
+        """Apply configured redaction rules to command output.
+
+        中文翻译:
+        将配置的编辑规则应用于命令输出。"""
         matches_by_type: dict[str, list[PIIMatch]] = {}
         updated = content
         for rule in self._redaction_rules:

@@ -1,4 +1,7 @@
-"""LangSmith document loader."""
+"""LangSmith document loader.
+
+中文翻译:
+LangSmith 文档加载器。"""
 
 import datetime
 import json
@@ -35,7 +38,24 @@ class LangSmithLoader(BaseLoader):
         ```python
         # -> [Document("...", metadata={"inputs": {...}, "outputs": {...}, ...}), ...]
         ```
-    """
+    
+
+    中文翻译:
+    将 LangSmith 数据集示例加载为“Document”对象。
+    将示例输入加载为“文档”页面内容并放置整个
+    示例进入“文档”元数据。这使您可以轻松创建少量镜头
+    来自加载文档的示例检索器。
+    ???注意“延迟加载示例”
+        ````蟒蛇
+        从 langchain_core.document_loaders 导入 LangSmithLoader
+        加载器 = LangSmithLoader(dataset_id="...", limit=100)
+        文档 = []
+        对于 loader.lazy_load() 中的文档：
+            文档.追加（doc）
+        ````
+        ````蟒蛇
+        # -> [文档("...", 元数据={"输入": {...}, "输出": {...}, ...}), ...]
+        ````"""
 
     def __init__(
         self,
@@ -84,7 +104,36 @@ class LangSmithLoader(BaseLoader):
 
         Raises:
             ValueError: If both `client` and `client_kwargs` are provided.
-        """  # noqa: E501
+        
+
+        中文翻译:
+        创建一个 LangSmith 加载器。
+        参数：
+            dataset_id：要过滤的数据集的 ID。
+            dataset_name：要过滤的数据集的名称。
+            content_key：设置为文档页面内容的输入键。 ''.'` 字符
+                被解释为嵌套键。例如。 `content_key="first.second"` 将
+                结果
+                `文档（page_content = format_content（example.inputs [“第一”] [“第二”]））`
+            format_content：用于转换从示例中提取的内容的函数
+                输入到一个字符串中。默认对内容进行 JSON 编码。
+            example_ids：要过滤的示例的 ID。
+            as_of：用于检索示例的数据集版本标记或时间戳。
+                响应示例仅是当时存在的示例
+                带标签（或带时间戳）的版本。
+            splits：数据集分割的列表，它们是
+                数据集的划分，例如“train”、“test”或“validation”。
+                仅返回指定拆分的示例。
+            inline_s3_urls：是否内联S3 URL。
+            offset：开始的偏移量。
+            limit：返回的最大示例数。
+            元数据：要过滤的元数据。
+            过滤器：应用于示例的结构化过滤器字符串。
+            客户端：LangSmith 客户端。如果没有提供将从下面的参数初始化。
+            client_kwargs：传递给 LangSmith 客户端 init 的关键字参数。应该只是
+                如果没有指定“client”。
+        加薪：
+            ValueError：如果同时提供了“client”和“client_kwargs”。"""  # noqa: E501
         if client and client_kwargs:
             raise ValueError
         self._client = client or LangSmithClient(**client_kwargs)
@@ -121,6 +170,7 @@ class LangSmithLoader(BaseLoader):
             content_str = self.format_content(content)
             metadata = pydantic_to_dict(example)
             # Stringify datetime and UUID types.
+            # 中文: 将日期时间和 UUID 类型字符串化。
             for k in ("dataset_id", "created_at", "modified_at", "source_run_id", "id"):
                 metadata[k] = str(metadata[k]) if metadata[k] else metadata[k]
             yield Document(content_str, metadata=metadata)

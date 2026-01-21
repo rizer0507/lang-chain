@@ -1,4 +1,7 @@
-"""Tool that takes in function or coroutine directly."""
+"""Tool that takes in function or coroutine directly.
+
+中文翻译:
+直接接收函数或协程的工具。"""
 
 from __future__ import annotations
 
@@ -12,6 +15,7 @@ from typing import (
 from typing_extensions import override
 
 # Cannot move to TYPE_CHECKING as _run/_arun parameter annotations are needed at runtime
+# 中文: 无法移动到 TYPE_CHECKING，因为运行时需要 _run/_arun 参数注释
 from langchain_core.callbacks import (
     AsyncCallbackManagerForToolRun,  # noqa: TC001
     CallbackManagerForToolRun,  # noqa: TC001
@@ -29,15 +33,25 @@ if TYPE_CHECKING:
 
 
 class Tool(BaseTool):
-    """Tool that takes in function or coroutine directly."""
+    """Tool that takes in function or coroutine directly.
+
+    中文翻译:
+    直接接收函数或协程的工具。"""
 
     description: str = ""
     func: Callable[..., str] | None
-    """The function to run when the tool is called."""
+    """The function to run when the tool is called.
+
+    中文翻译:
+    调用该工具时要运行的函数。"""
     coroutine: Callable[..., Awaitable[str]] | None = None
-    """The asynchronous version of the function."""
+    """The asynchronous version of the function.
+
+    中文翻译:
+    该函数的异步版本。"""
 
     # --- Runnable ---
+    # 中文: --- 可运行 ---
 
     @override
     async def ainvoke(
@@ -48,11 +62,13 @@ class Tool(BaseTool):
     ) -> Any:
         if not self.coroutine:
             # If the tool does not implement async, fall back to default implementation
+            # 中文: 如果该工具未实现异步，则回退到默认实现
             return await run_in_executor(config, self.invoke, input, config, **kwargs)
 
         return await super().ainvoke(input, config, **kwargs)
 
     # --- Tool ---
+    # 中文: - - 工具  - -
 
     @property
     def args(self) -> dict:
@@ -60,11 +76,18 @@ class Tool(BaseTool):
 
         Returns:
             The input arguments for the tool.
-        """
+        
+
+        中文翻译:
+        该工具的输入参数。
+        返回：
+            该工具的输入参数。"""
         if self.args_schema is not None:
             return super().args
         # For backwards compatibility, if the function signature is ambiguous,
+        # 中文: 为了向后兼容，如果函数签名不明确，
         # assume it takes a single string input.
+        # 中文: 假设它需要单个字符串输入。
         return {"tool_input": {"type": "string"}}
 
     def _to_args_and_kwargs(
@@ -81,14 +104,29 @@ class Tool(BaseTool):
 
         Returns:
             The Pydantic model args and kwargs.
-        """
+        
+
+        中文翻译:
+        将工具输入转换为 Pydantic 模型。
+        参数：
+            tool_input：工具的输入。
+            tool_call_id：工具调用的 ID。
+        加薪：
+            ToolException：如果工具输入无效。
+        返回：
+            Pydantic 模型 args 和 kwargs。"""
         args, kwargs = super()._to_args_and_kwargs(tool_input, tool_call_id)
         # For backwards compatibility. The tool must be run with a single input
+        # 中文: 为了向后兼容。该工具必须使用单个输入运行
         all_args = list(args) + list(kwargs.values())
         if len(all_args) != 1:
             msg = (
                 f"""Too many arguments to single-input tool {self.name}.
-                Consider using StructuredTool instead."""
+                Consider using StructuredTool instead.
+
+中文翻译:
+单输入工具 {self.name} 的参数太多。
+                考虑改用 StructuredTool。"""
                 f" Args: {all_args}"
             )
             raise ToolException(msg)
@@ -111,7 +149,17 @@ class Tool(BaseTool):
 
         Returns:
             The result of the tool execution
-        """
+        
+
+        中文翻译:
+        使用该工具。
+        参数：
+            *args：传递给工具的位置参数
+            config：运行配置
+            run_manager：用于运行的可选回调管理器
+            **kwargs：传递给工具的关键字参数
+        返回：
+            工具执行结果"""
         if self.func:
             if run_manager and signature(self.func).parameters.get("callbacks"):
                 kwargs["callbacks"] = run_manager.get_child()
@@ -138,7 +186,17 @@ class Tool(BaseTool):
 
         Returns:
             The result of the tool execution
-        """
+        
+
+        中文翻译:
+        异步使用该工具。
+        参数：
+            *args：传递给工具的位置参数
+            config：运行配置
+            run_manager：用于运行的可选回调管理器
+            **kwargs：传递给工具的关键字参数
+        返回：
+            工具执行结果"""
         if self.coroutine:
             if run_manager and signature(self.coroutine).parameters.get("callbacks"):
                 kwargs["callbacks"] = run_manager.get_child()
@@ -148,6 +206,7 @@ class Tool(BaseTool):
 
         # NOTE: this code is unreachable since _arun is only called if coroutine is not
         # None.
+        # 中文: 没有任何。
         return await super()._arun(
             *args, config=config, run_manager=run_manager, **kwargs
         )
@@ -156,7 +215,10 @@ class Tool(BaseTool):
     def __init__(
         self, name: str, func: Callable | None, description: str, **kwargs: Any
     ) -> None:
-        """Initialize tool."""
+        """Initialize tool.
+
+        中文翻译:
+        初始化工具。"""
         super().__init__(name=name, func=func, description=description, **kwargs)
 
     @classmethod
@@ -187,7 +249,22 @@ class Tool(BaseTool):
 
         Raises:
             ValueError: If the function is not provided.
-        """
+        
+
+        中文翻译:
+        从函数初始化工具。
+        参数：
+            func：创建工具的函数。
+            名称：工具的名称。
+            描述：工具的描述。
+            return_direct：是否直接返回输出。
+            args_schema：工具输入参数的架构。
+            协程：函数的异步版本。
+            **kwargs：传递给工具的附加参数。
+        返回：
+            工具。
+        加薪：
+            ValueError：如果未提供该功能。"""
         if func is None and coroutine is None:
             msg = "Function and/or coroutine must be provided"
             raise ValueError(msg)

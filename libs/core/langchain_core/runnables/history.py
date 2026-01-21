@@ -1,4 +1,49 @@
-"""Runnable that manages chat message history for another Runnable."""
+"""管理聊天消息历史的 Runnable 模块。
+
+本模块提供 `RunnableWithMessageHistory`，用于自动管理对话历史。
+
+核心功能:
+---------
+自动读取、更新和持久化聊天消息历史，使 LLM 能够记住之前的对话内容。
+
+常用场景:
+---------
+1. 构建具有记忆功能的聊天机器人
+2. 多轮对话应用
+3. 需要上下文感知的 AI 助手
+
+关键概念:
+---------
+- session_id: 唯一标识一个对话会话
+- BaseChatMessageHistory: 消息历史存储的抽象接口
+- 支持同步和异步操作
+
+使用示例:
+---------
+>>> from langchain_core.runnables.history import RunnableWithMessageHistory
+>>> from langchain_core.chat_history import InMemoryChatMessageHistory
+>>>
+>>> # 定义获取会话历史的函数
+>>> store = {}
+>>> def get_session_history(session_id: str):
+...     if session_id not in store:
+...         store[session_id] = InMemoryChatMessageHistory()
+...     return store[session_id]
+>>>
+>>> # 包装你的链
+>>> with_history = RunnableWithMessageHistory(
+...     runnable=your_chain,
+...     get_session_history=get_session_history,
+...     input_messages_key="question",
+...     history_messages_key="history",
+... )
+>>>
+>>> # 调用时指定 session_id
+>>> with_history.invoke(
+...     {"question": "你好！"},
+...     config={"configurable": {"session_id": "user-123"}}
+... )
+"""
 
 from __future__ import annotations
 
@@ -36,159 +81,86 @@ GetSessionHistoryCallable = Callable[..., BaseChatMessageHistory]
 
 
 class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
-    """`Runnable` that manages chat message history for another `Runnable`.
+    """为另一个 Runnable 管理聊天消息历史的 Runnable。
 
-    A chat message history is a sequence of messages that represent a conversation.
+    聊天消息历史是代表对话的消息序列。
 
-    `RunnableWithMessageHistory` wraps another `Runnable` and manages the chat message
-    history for it; it is responsible for reading and updating the chat message
-    history.
+    `RunnableWithMessageHistory` 包装另一个 Runnable 并为其管理聊天消息历史；
+    它负责读取和更新聊天消息历史。
 
-    The formats supported for the inputs and outputs of the wrapped `Runnable`
-    are described below.
+    核心功能:
+    ---------
+    1. 自动加载历史消息并注入到输入中
+    2. 自动保存新的输入和输出消息到历史
+    3. 支持自定义 session_id 和多租户场景
 
-    `RunnableWithMessageHistory` must always be called with a config that contains
-    the appropriate parameters for the chat message history factory.
+    调用要求:
+    ---------
+    必须在调用时提供包含会话工厂参数的配置。
+    默认情况下，需要一个名为 `session_id` 的字符串参数。
 
-    By default, the `Runnable` is expected to take a single configuration parameter
-    called `session_id` which is a string. This parameter is used to create a new
-    or look up an existing chat message history that matches the given `session_id`.
+    调用示例:
+        `with_history.invoke(..., config={"configurable": {"session_id": "bar"}})`
 
-    In this case, the invocation would look like this:
+    输入格式:
+    ---------
+    1. BaseMessage 列表
+    2. 包含消息键的字典
+    3. 包含当前输入和历史消息分开键的字典
 
-    `with_history.invoke(..., config={"configurable": {"session_id": "bar"}})`
-    ; e.g., `{"configurable": {"session_id": "<SESSION_ID>"}}`.
+    输出格式:
+    ---------
+    1. 可作为 AIMessage 的字符串
+    2. BaseMessage 或 BaseMessage 序列
+    3. 包含 BaseMessage 的字典
 
-    The configuration can be customized by passing in a list of
-    `ConfigurableFieldSpec` objects to the `history_factory_config` parameter (see
-    example below).
+    属性:
+    -----
+    get_session_history : Callable
+        返回新的 BaseChatMessageHistory 的函数
+    input_messages_key : str | None
+        输入字典中包含消息的键
+    output_messages_key : str | None
+        输出字典中包含消息的键
+    history_messages_key : str | None
+        输入字典中放置历史消息的键
+    history_factory_config : Sequence[ConfigurableFieldSpec]
+        传递给历史工厂的配置字段
 
-    In the examples, we will use a chat message history with an in-memory
-    implementation to make it easy to experiment and see the results.
-
-    For production use cases, you will want to use a persistent implementation
-    of chat message history, such as `RedisChatMessageHistory`.
-
-    Example: Chat message history with an in-memory implementation for testing.
-
+    基础示例（字典输入）:
         ```python
-        from operator import itemgetter
-
-        from langchain_openai.chat_models import ChatOpenAI
-
-        from langchain_core.chat_history import BaseChatMessageHistory
-        from langchain_core.documents import Document
-        from langchain_core.messages import BaseMessage, AIMessage
-        from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-        from pydantic import BaseModel, Field
-        from langchain_core.runnables import (
-            RunnableLambda,
-            ConfigurableFieldSpec,
-            RunnablePassthrough,
-        )
-        from langchain_core.runnables.history import RunnableWithMessageHistory
-
-
-        class InMemoryHistory(BaseChatMessageHistory, BaseModel):
-            \"\"\"In memory implementation of chat message history.\"\"\"
-
-            messages: list[BaseMessage] = Field(default_factory=list)
-
-            def add_messages(self, messages: list[BaseMessage]) -> None:
-                \"\"\"Add a list of messages to the store\"\"\"
-                self.messages.extend(messages)
-
-            def clear(self) -> None:
-                self.messages = []
-
-        # Here we use a global variable to store the chat message history.
-        # This will make it easier to inspect it to see the underlying results.
-        store = {}
-
-        def get_by_session_id(session_id: str) -> BaseChatMessageHistory:
-            if session_id not in store:
-                store[session_id] = InMemoryHistory()
-            return store[session_id]
-
-
-        history = get_by_session_id("1")
-        history.add_message(AIMessage(content="hello"))
-        print(store)  # noqa: T201
-
-        ```
-
-    Example where the wrapped `Runnable` takes a dictionary input:
-
-        ```python
-        from typing import Optional
-
         from langchain_anthropic import ChatAnthropic
         from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
         from langchain_core.runnables.history import RunnableWithMessageHistory
 
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "你是一个擅长{ability}的助手"),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}"),
+        ])
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "You're an assistant who's good at {ability}"),
-                MessagesPlaceholder(variable_name="history"),
-                ("human", "{question}"),
-            ]
-        )
-
-        chain = prompt | ChatAnthropic(model="claude-2")
+        chain = prompt | ChatAnthropic(model="claude-3-haiku")
 
         chain_with_history = RunnableWithMessageHistory(
             chain,
-            # Uses the get_by_session_id function defined in the example
-            # above.
-            get_by_session_id,
+            get_by_session_id,  # 定义的会话历史获取函数
             input_messages_key="question",
             history_messages_key="history",
         )
 
-        print(
-            chain_with_history.invoke(  # noqa: T201
-                {"ability": "math", "question": "What does cosine mean?"},
-                config={"configurable": {"session_id": "foo"}},
-            )
+        chain_with_history.invoke(
+            {"ability": "数学", "question": "余弦是什么意思？"},
+            config={"configurable": {"session_id": "user-123"}},
         )
-
-        # Uses the store defined in the example above.
-        print(store)  # noqa: T201
-
-        print(
-            chain_with_history.invoke(  # noqa: T201
-                {"ability": "math", "question": "What's its inverse"},
-                config={"configurable": {"session_id": "foo"}},
-            )
-        )
-
-        print(store)  # noqa: T201
         ```
 
-    Example where the session factory takes two keys (`user_id` and `conversation_id`):
-
+    多键工厂示例（使用 user_id 和 conversation_id）:
         ```python
-        store = {}
-
-
-        def get_session_history(
-            user_id: str, conversation_id: str
-        ) -> BaseChatMessageHistory:
-            if (user_id, conversation_id) not in store:
-                store[(user_id, conversation_id)] = InMemoryHistory()
-            return store[(user_id, conversation_id)]
-
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "You're an assistant who's good at {ability}"),
-                MessagesPlaceholder(variable_name="history"),
-                ("human", "{question}"),
-            ]
-        )
-
-        chain = prompt | ChatAnthropic(model="claude-2")
+        def get_session_history(user_id: str, conversation_id: str):
+            key = (user_id, conversation_id)
+            if key not in store:
+                store[key] = InMemoryHistory()
+            return store[key]
 
         with_message_history = RunnableWithMessageHistory(
             chain,
@@ -199,24 +171,20 @@ class RunnableWithMessageHistory(RunnableBindingBase):  # type: ignore[no-redef]
                 ConfigurableFieldSpec(
                     id="user_id",
                     annotation=str,
-                    name="User ID",
-                    description="Unique identifier for the user.",
-                    default="",
-                    is_shared=True,
+                    name="用户 ID",
+                    description="用户的唯一标识符。",
                 ),
                 ConfigurableFieldSpec(
                     id="conversation_id",
                     annotation=str,
-                    name="Conversation ID",
-                    description="Unique identifier for the conversation.",
-                    default="",
-                    is_shared=True,
+                    name="对话 ID",
+                    description="对话的唯一标识符。",
                 ),
             ],
         )
 
         with_message_history.invoke(
-            {"ability": "math", "question": "What does cosine mean?"},
+            {"ability": "数学", "question": "余弦是什么意思？"},
             config={"configurable": {"user_id": "123", "conversation_id": "1"}},
         )
         ```

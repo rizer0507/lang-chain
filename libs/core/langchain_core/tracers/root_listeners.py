@@ -1,4 +1,7 @@
-"""Tracers that call listeners."""
+"""Tracers that call listeners.
+
+中文翻译:
+调用侦听器的跟踪器。"""
 
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
@@ -21,10 +24,16 @@ AsyncListener = (
 
 
 class RootListenersTracer(BaseTracer):
-    """Tracer that calls listeners on run start, end, and error."""
+    """Tracer that calls listeners on run start, end, and error.
+
+    中文翻译:
+    在运行开始、结束和错误时调用侦听器的跟踪器。"""
 
     log_missing_parent = False
-    """Whether to log a warning if the parent is missing."""
+    """Whether to log a warning if the parent is missing.
+
+    中文翻译:
+    如果父级丢失，是否记录警告。"""
 
     def __init__(
         self,
@@ -41,7 +50,15 @@ class RootListenersTracer(BaseTracer):
             on_start: The listener to call on run start.
             on_end: The listener to call on run end.
             on_error: The listener to call on run error
-        """
+        
+
+        中文翻译:
+        初始化跟踪器。
+        参数：
+            config：可运行的配置。
+            on_start：运行开始时调用的侦听器。
+            on_end：运行结束时调用的侦听器。
+            on_error：运行错误时调用的监听器"""
         super().__init__(_schema_format="original+chat")
 
         self.config = config
@@ -52,7 +69,9 @@ class RootListenersTracer(BaseTracer):
 
     def _persist_run(self, run: Run) -> None:
         # This is a legacy method only called once for an entire run tree
+        # 中文: 这是一个遗留方法，仅对整个运行树调用一次
         # therefore not useful here
+        # 中文: 因此这里没用
         pass
 
     def _on_run_create(self, run: Run) -> None:
@@ -76,10 +95,16 @@ class RootListenersTracer(BaseTracer):
 
 
 class AsyncRootListenersTracer(AsyncBaseTracer):
-    """Async Tracer that calls listeners on run start, end, and error."""
+    """Async Tracer that calls listeners on run start, end, and error.
+
+    中文翻译:
+    异步跟踪器在运行开始、结束和错误时调用侦听器。"""
 
     log_missing_parent = False
-    """Whether to log a warning if the parent is missing."""
+    """Whether to log a warning if the parent is missing.
+
+    中文翻译:
+    如果父级丢失，是否记录警告。"""
 
     def __init__(
         self,
@@ -96,7 +121,15 @@ class AsyncRootListenersTracer(AsyncBaseTracer):
             on_start: The listener to call on run start.
             on_end: The listener to call on run end.
             on_error: The listener to call on run error
-        """
+        
+
+        中文翻译:
+        初始化跟踪器。
+        参数：
+            config：可运行的配置。
+            on_start：运行开始时调用的侦听器。
+            on_end：运行结束时调用的侦听器。
+            on_error：运行错误时调用的监听器"""
         super().__init__(_schema_format="original+chat")
 
         self.config = config
@@ -107,7 +140,9 @@ class AsyncRootListenersTracer(AsyncBaseTracer):
 
     async def _persist_run(self, run: Run) -> None:
         # This is a legacy method only called once for an entire run tree
+        # 中文: 这是一个遗留方法，仅对整个运行树调用一次
         # therefore not useful here
+        # 中文: 因此这里没用
         pass
 
     async def _on_run_create(self, run: Run) -> None:

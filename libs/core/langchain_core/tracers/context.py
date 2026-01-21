@@ -1,4 +1,7 @@
-"""Context management for tracers."""
+"""Context management for tracers.
+
+中文翻译:
+跟踪器的上下文管理。"""
 
 from __future__ import annotations
 
@@ -27,6 +30,7 @@ if TYPE_CHECKING:
     from langchain_core.callbacks.manager import AsyncCallbackManager, CallbackManager
 
 # for backwards partial compatibility if this is imported by users but unused
+# 中文: 如果用户导入但未使用，则用于向后部分兼容
 tracing_callback_var: Any = None
 tracing_v2_callback_var: ContextVar[LangChainTracer | None] = ContextVar(
     "tracing_callback_v2", default=None
@@ -64,7 +68,19 @@ def tracing_v2_enabled(
         >>> with tracing_v2_enabled() as cb:
         ...     chain.invoke("foo")
         ...     run_url = cb.get_run_url()
-    """
+    
+
+    中文翻译:
+    指示 LangChain 将上下文中的所有运行记录到 LangSmith。
+    参数：
+        项目名称：项目的名称。默认为“默认”。
+        example_id：示例的 ID。
+        标签：要添加到运行的标签。
+        客户：郎匠的客户。
+    产量：
+        LangChain 追踪器。
+    示例：
+        您可以使用它来获取 LangSmith 运行 URL："""
     if isinstance(example_id, str):
         example_id = UUID(example_id)
     cb = LangChainTracer(
@@ -91,7 +107,15 @@ def collect_runs() -> Generator[RunCollectorCallbackHandler, None, None]:
         >>> with collect_runs() as runs_cb:
                 chain.invoke("foo")
                 run_id = runs_cb.traced_runs[0].id
-    """
+    
+
+    中文翻译:
+    收集上下文中的所有运行跟踪。
+    产量：
+        运行收集器回调处理程序。
+    示例：
+                链.调用（“foo”）
+                run_id = running_cb.traced_runs[0].id"""
     cb = RunCollectorCallbackHandler()
     token = run_collector_var.set(cb)
     try:
@@ -120,7 +144,9 @@ def _get_trace_callbacks(
             ):
                 callback_manager.add_handler(tracer)
                 # If it already has a LangChainTracer, we don't need to add another one.
+                # 中文: 如果已经有LangChainTracer，我们就不需要再添加一个。
                 # this would likely mess up the trace hierarchy.
+                # 中文: 这可能会扰乱跟踪层次结构。
             cb = callback_manager
     else:
         cb = None
@@ -143,14 +169,21 @@ def _get_tracer_project() -> str:
         "session_name",
         getattr(
             # Note, if people are trying to nest @traceable functions and the
+            # 中文: 请注意，如果人们尝试嵌套 @traceable 函数并且
             # tracing_v2_enabled context manager, this will likely mess up the
+            # 中文: Tracing_v2_enabled 上下文管理器，这可能会弄乱
             # tree structure.
+            # 中文: 树结构。
             tracing_v2_callback_var.get(),
             "project",
             # Have to set this to a string even though it always will return
+            # 中文: 必须将其设置为字符串，即使它总是会返回
             # a string because `get_tracer_project` technically can return
+            # 中文: 一个字符串，因为“get_tracer_project”在技术上可以返回
             # None, but only when a specific argument is supplied.
+            # 中文: 无，但仅当提供特定参数时。
             # Therefore, this just tricks the mypy type checker
+            # 中文: 因此，这只是欺骗了 mypy 类型检查器
             str(ls_utils.get_tracer_project()),
         ),
     )
@@ -183,7 +216,18 @@ def register_configure_hook(
     Raises:
         ValueError: If env_var is set, handle_class must also be set to a non-None
             value.
-    """
+    
+
+    中文翻译:
+    注册一个配置钩子。
+    参数：
+        context_var：上下文变量。
+        可继承：上下文变量是否可继承。
+        handle_class：回调处理程序类。
+        env_var：环境变量。
+    加薪：
+        ValueError：如果设置了 env_var，handle_class 也必须设置为非 None
+            值。"""
     if env_var is not None and handle_class is None:
         msg = "If env_var is set, handle_class must also be set to a non-None value."
         raise ValueError(msg)
@@ -191,7 +235,9 @@ def register_configure_hook(
     _configure_hooks.append(
         (
             # the typings of ContextVar do not have the generic arg set as covariant
+            # 中文: ContextVar 的类型没有将通用参数设置为协变
             # so we have to cast it
+            # 中文: 所以我们必须投射它
             cast("ContextVar[BaseCallbackHandler | None]", context_var),
             inheritable,
             handle_class,

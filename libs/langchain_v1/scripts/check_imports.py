@@ -6,6 +6,14 @@ Makefiles.
 
 If loading a file fails, the script prints the problematic filename and the detailed
 error traceback.
+
+中文翻译:
+检查导入脚本。
+快速验证Python解释器是否可以加载Python文件列表
+不会引发任何错误。在运行更昂贵的测试之前运行。有用于
+生成文件。
+如果加载文件失败，脚本会打印有问题的文件名和详细信息
+错误回溯。
 """
 
 import random

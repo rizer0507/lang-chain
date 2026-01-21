@@ -1,4 +1,7 @@
-"""CLI for refreshing model profile data from models.dev."""
+"""CLI for refreshing model profile data from models.dev.
+
+中文翻译:
+用于从 models.dev 刷新模型配置文件数据的 CLI。"""
 
 import argparse
 import json
@@ -26,8 +29,18 @@ def _validate_data_dir(data_dir: Path) -> Path:
 
     Raises:
         SystemExit: If user declines to write outside current directory.
-    """
+    
+
+    中文翻译:
+    验证并规范化数据目录路径。
+    参数：
+        data_dir：用户提供的数据目录路径。
+    返回：
+        已解决的规范路径。
+    加薪：
+        SystemExit：如果用户拒绝在当前目录之外写入。"""
     # Resolve to absolute, canonical path (follows symlinks)
+    # 中文: 解析为绝对、规范路径（遵循符号链接）
     try:
         resolved = data_dir.resolve(strict=False)
     except (OSError, RuntimeError) as e:
@@ -36,11 +49,13 @@ def _validate_data_dir(data_dir: Path) -> Path:
         sys.exit(1)
 
     # Warn if writing outside current directory
+    # 中文: 如果在当前目录之外写入则发出警告
     cwd = Path.cwd().resolve()
     try:
         resolved.relative_to(cwd)
     except ValueError:
         # Not relative to cwd
+        # 中文: 与cwd无关
         print("⚠️  WARNING: Writing outside current directory", file=sys.stderr)
         print(f"   Current directory: {cwd}", file=sys.stderr)
         print(f"   Target directory:  {resolved}", file=sys.stderr)
@@ -63,7 +78,14 @@ def _load_augmentations(
 
     Returns:
         Tuple of (provider_augmentations, model_augmentations).
-    """
+    
+
+    中文翻译:
+    从 profile_augmentations.toml 加载增强。
+    参数：
+        data_dir：包含 profile_augmentations.toml 的目录。
+    返回：
+        (provider_augmentations, model_augmentations) 的元组。"""
     aug_file = data_dir / "profile_augmentations.toml"
     if not aug_file.exists():
         return {}, {}
@@ -98,7 +120,10 @@ def _load_augmentations(
 
 
 def _model_data_to_profile(model_data: dict[str, Any]) -> dict[str, Any]:
-    """Convert raw models.dev data into the canonical profile structure."""
+    """Convert raw models.dev data into the canonical profile structure.
+
+    中文翻译:
+    将原始 models.dev 数据转换为规范的配置文件结构。"""
     limit = model_data.get("limit") or {}
     modalities = model_data.get("modalities") or {}
     input_modalities = modalities.get("input") or []
@@ -129,7 +154,10 @@ def _model_data_to_profile(model_data: dict[str, Any]) -> dict[str, Any]:
 def _apply_overrides(
     profile: dict[str, Any], *overrides: dict[str, Any] | None
 ) -> dict[str, Any]:
-    """Merge provider and model overrides onto the canonical profile."""
+    """Merge provider and model overrides onto the canonical profile.
+
+    中文翻译:
+    将提供者和模型覆盖合并到规范配置文件上。"""
     merged = dict(profile)
     for override in overrides:
         if not override:
@@ -141,7 +169,10 @@ def _apply_overrides(
 
 
 def _ensure_safe_output_path(base_dir: Path, output_file: Path) -> None:
-    """Ensure the resolved output path remains inside the expected directory."""
+    """Ensure the resolved output path remains inside the expected directory.
+
+    中文翻译:
+    确保解析的输出路径保留在预期目录内。"""
     if base_dir.exists() and base_dir.is_symlink():
         msg = f"Data directory {base_dir} is a symlink; refusing to write profiles."
         print(f"❌ {msg}", file=sys.stderr)
@@ -168,7 +199,10 @@ def _ensure_safe_output_path(base_dir: Path, output_file: Path) -> None:
 
 
 def _write_profiles_file(output_file: Path, contents: str) -> None:
-    """Write the generated module atomically without following symlinks."""
+    """Write the generated module atomically without following symlinks.
+
+    中文翻译:
+    以原子方式编写生成的模块，无需遵循符号链接。"""
     _ensure_safe_output_path(output_file.parent, output_file)
 
     temp_path: Path | None = None
@@ -206,7 +240,17 @@ License: MIT License
 To update these data, refer to the instructions here:
 
 https://docs.langchain.com/oss/python/langchain/models#updating-or-overwriting-profile-data
-"""
+
+ 中文翻译:
+ 自动生成的模型配置文件。
+请勿手动编辑此文件。
+该文件由 langchain-profiles CLI 工具生成。
+它包含源自 models.dev 项目的数据。
+来源：https://github.com/sst/models.dev
+许可证：麻省理工学院许可证
+要更新这些数据，请参阅此处的说明：
+https://docs.langchain.com/oss/python/langchain/models#updating-or-overwriting-profile-data
+ """
 
 
 def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
@@ -216,8 +260,16 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
         provider: Provider ID from models.dev (e.g., 'anthropic', 'openai').
         data_dir: Directory containing profile_augmentations.toml and where profiles.py
             will be written.
-    """
+    
+
+    中文翻译:
+    下载并合并特定提供商的模型配置文件数据。
+    参数：
+        提供商：来自 models.dev 的提供商 ID（例如“anthropic”、“openai”）。
+        data_dir：包含 profile_augmentations.toml 和 profile.py 的目录
+            将被写入。"""
     # Validate and canonicalize data directory path
+    # 中文: 验证并规范化数据目录路径
     data_dir = _validate_data_dir(data_dir)
 
     api_url = "https://models.dev/api.json"
@@ -227,6 +279,7 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
     print()
 
     # Download data from models.dev
+    # 中文: 从 models.dev 下载数据
     print(f"Downloading data from {api_url}...")
     try:
         response = httpx.get(api_url, timeout=30)
@@ -252,6 +305,7 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
         sys.exit(1)
 
     # Basic validation
+    # 中文: 基本验证
     if not isinstance(all_data, dict):
         msg = "Expected API response to be a dictionary"
         print(f"❌ {msg}", file=sys.stderr)
@@ -262,6 +316,7 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
     print(f"Downloaded {provider_count} providers with {model_count} models")
 
     # Extract data for this provider
+    # 中文: 提取该提供商的数据
     if provider not in all_data:
         msg = f"Provider '{provider}' not found in models.dev data"
         print(msg, file=sys.stderr)
@@ -272,10 +327,12 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
     print(f"Extracted {len(models)} models for {provider}")
 
     # Load augmentations
+    # 中文: 负荷增加
     print("Loading augmentations...")
     provider_aug, model_augs = _load_augmentations(data_dir)
 
     # Merge and convert to profiles
+    # 中文: 合并并转换为配置文件
     profiles: dict[str, dict[str, Any]] = {}
     for model_id, model_data in models.items():
         base_profile = _model_data_to_profile(model_data)
@@ -284,6 +341,7 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
         )
 
     # Include new models defined purely via augmentations
+    # 中文: 包括纯粹通过增强定义的新模型
     extra_models = set(model_augs) - set(models)
     if extra_models:
         print(f"Adding {len(extra_models)} models from augmentations only...")
@@ -291,6 +349,7 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
         profiles[model_id] = _apply_overrides({}, provider_aug, model_augs[model_id])
 
     # Ensure directory exists
+    # 中文: 确保目录存在
     try:
         data_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
     except PermissionError:
@@ -303,9 +362,13 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
         sys.exit(1)
 
     # Write as Python module
+    # 中文: 编写为 Python 模块
     output_file = data_dir / "_profiles.py"
     print(f"Writing to {output_file}...")
-    module_content = [f'"""{MODULE_ADMONITION}"""\n', "from typing import Any\n\n"]
+    module_content = [f'"""{MODULE_ADMONITION}
+
+中文翻译:
+{MODULE_ADMONITION}"""\n', "from typing import Any\n\n"]
     module_content.append("_PROFILES: dict[str, dict[str, Any]] = ")
     json_str = json.dumps(profiles, indent=4)
     json_str = (
@@ -323,7 +386,10 @@ def refresh(provider: str, data_dir: Path) -> None:  # noqa: C901, PLR0915
 
 
 def main() -> None:
-    """CLI entrypoint."""
+    """CLI entrypoint.
+
+    中文翻译:
+    CLI 入口点。"""
     parser = argparse.ArgumentParser(
         description="Refresh model profile data from models.dev",
         prog="langchain-profiles",
@@ -331,6 +397,7 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # refresh command
+    # 中文: 刷新命令
     refresh_parser = subparsers.add_parser(
         "refresh", help="Download and merge model profile data for a provider"
     )

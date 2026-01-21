@@ -1,4 +1,7 @@
-"""Factory functions for chat models."""
+"""Factory functions for chat models.
+
+中文翻译:
+聊天模型的工厂函数。"""
 
 from __future__ import annotations
 
@@ -81,6 +84,15 @@ Each entry maps a provider key to a tuple of:
     not exported from the package root.
 - `class_name`: The name of the chat model class to import.
 - `creator_func`: A callable that instantiates the class with provided kwargs.
+
+中文翻译:
+注册表将提供程序名称映射到其导入配置。
+每个条目将提供者密钥映射到以下元组：
+- `module_path`：包含聊天模型类的 Python 模块路径。
+    如果该类是，这可能是一个子模块（例如“langchain_azure_ai.chat_models”）
+    未从包根目录导出。
+- `class_name`：要导入的聊天模型类的名称。
+- `creator_func`：使用提供的 kwargs 实例化类的可调用对象。
 """
 
 
@@ -96,12 +108,24 @@ def _import_module(module: str) -> ModuleType:
     Raises:
         ImportError: If the module cannot be imported, with a message suggesting
             the pip package to install.
-    """
+    
+
+    中文翻译:
+    按名称导入模块。
+    参数：
+        module：要导入的完全限定模块名称（例如“langchain_openai”）。
+    返回：
+        导入的模块。
+    加薪：
+        ImportError: 如果模块无法导入，有提示信息
+            要安装的 pip 包。"""
     try:
         return importlib.import_module(module)
     except ImportError as e:
         # Extract package name from module path (e.g., "langchain_azure_ai.chat_models"
+        # 中文: 从模块路径中提取包名称（例如“langchain_azure_ai.chat_models”
         # becomes "langchain-azure-ai")
+        # 中文: 变为“langchain-azure-ai”）
         pkg = module.split(".", maxsplit=1)[0].replace("_", "-")
         msg = f"Could not import {pkg} python package. Please install it with `pip install {pkg}`"
         raise ImportError(msg) from e
@@ -127,7 +151,20 @@ def _get_chat_model_creator(
     Raises:
         ValueError: If the provider is not in `_SUPPORTED_PROVIDERS`.
         ImportError: If the provider's integration package is not installed.
-    """
+    
+
+    中文翻译:
+    返回一个为给定提供者创建聊天模型的工厂函数。
+    该函数被缓存以避免重复的模块导入。
+    参数：
+        提供者：模型提供者的名称（例如“openai”、“anthropic”）。
+            必须是“_SUPPORTED_PROVIDERS”中的键。
+    返回：
+        接受模型 kwargs 并返回“BaseChatModel”实例的可调用对象
+            指定的提供商。
+    加薪：
+        ValueError：如果提供程序不在“_SUPPORTED_PROVIDERS”中。
+        ImportError：如果未安装提供商的集成包。"""
     if provider not in _SUPPORTED_PROVIDERS:
         supported = ", ".join(_SUPPORTED_PROVIDERS.keys())
         msg = f"Unsupported {provider=}.\n\nSupported model providers are: {supported}"
@@ -140,11 +177,14 @@ def _get_chat_model_creator(
         if provider != "ollama":
             raise
         # For backwards compatibility
+        # 中文: 为了向后兼容
         try:
             module = _import_module("langchain_community.chat_models")
         except ImportError:
             # If both langchain-ollama and langchain-community aren't available,
+            # 中文: 如果 langchain-ollama 和 langchain-community 都不可用，
             # raise an error related to langchain-ollama
+            # 中文: 引发与 langchain-ollama 相关的错误
             raise e from None
 
     cls = getattr(module, class_name)
@@ -185,8 +225,11 @@ def init_chat_model(
 
 
 # FOR CONTRIBUTORS: If adding support for a new provider, please append the provider
+# 中文: 对于贡献者：如果添加对新提供商的支持，请附加该提供商
 # name to the supported list in the docstring below. Do *not* change the order of the
+# 中文: 将名称添加到下面的文档字符串中支持的列表中。不要*改变*的顺序
 # existing providers.
+# 中文: 现有的提供商。
 def init_chat_model(
     model: str | None = None,
     *,
@@ -322,6 +365,7 @@ def init_chat_model(
 
         ```python
         # pip install langchain langchain-openai langchain-anthropic langchain-google-vertexai
+        # 中文: pip 安装 langchain langchain-openai langchain-anthropic langchain-google-vertexai
 
         from langchain.chat_models import init_chat_model
 
@@ -338,14 +382,17 @@ def init_chat_model(
 
         ```python
         # pip install langchain langchain-openai langchain-anthropic
+        # 中文: pip install langchain langchain-openai langchain-anthropic
 
         from langchain.chat_models import init_chat_model
 
         # (We don't need to specify configurable=True if a model isn't specified.)
+        # 中文: （如果未指定模型，我们不需要指定configurable=True。）
         configurable_model = init_chat_model(temperature=0)
 
         configurable_model.invoke("what's your name", config={"configurable": {"model": "gpt-4o"}})
         # Use GPT-4o to generate the response
+        # 中文: 使用 GPT-4o 生成响应
 
         configurable_model.invoke(
             "what's your name",
@@ -357,6 +404,7 @@ def init_chat_model(
 
         ```python
         # pip install langchain langchain-openai langchain-anthropic
+        # 中文: pip install langchain langchain-openai langchain-anthropic
 
         from langchain.chat_models import init_chat_model
 
@@ -369,6 +417,7 @@ def init_chat_model(
 
         configurable_model_with_default.invoke("what's your name")
         # GPT-4o response with temperature 0 (as set in default)
+        # 中文: GPT-4o 响应温度为 0（默认设置）
 
         configurable_model_with_default.invoke(
             "what's your name",
@@ -380,6 +429,7 @@ def init_chat_model(
             },
         )
         # Override default to use Sonnet 4.5 with temperature 0.6 to generate response
+        # 中文: 覆盖默认值以使用 Sonnet 4.5 和温度 0.6 来生成响应
         ```
 
     ??? example "Bind tools to a configurable model"
@@ -389,6 +439,7 @@ def init_chat_model(
 
         ```python
         # pip install langchain langchain-openai langchain-anthropic
+        # 中文: pip install langchain langchain-openai langchain-anthropic
 
         from langchain.chat_models import init_chat_model
         from pydantic import BaseModel, Field
@@ -420,15 +471,194 @@ def init_chat_model(
             "Which city is hotter today and which is bigger: LA or NY?"
         )
         # Use GPT-4o
+        # 中文: 使用 GPT-4o
 
         configurable_model_with_tools.invoke(
             "Which city is hotter today and which is bigger: LA or NY?",
             config={"configurable": {"model": "claude-sonnet-4-5-20250929"}},
         )
         # Use Sonnet 4.5
+        # 中文: 使用十四行诗 4.5
         ```
 
-    """  # noqa: E501
+    
+
+    中文翻译:
+    使用统一界面从任何受支持的提供商处初始化聊天模型。
+    **两个主要用例：**
+    1. **固定模型** – 预先指定模型并获得现成的聊天模型。
+    2. **可配置模型** – 选择在以下位置指定参数（包括模型名称）
+        通过“config”运行时。可以轻松地在模型/提供商之间切换，而无需
+        改变你的代码
+    !!!注意“安装要求”
+        需要安装所选模型提供程序的集成包。
+        具体包名请参见下面的`model_provider`参数
+        （例如，“pip install langchain-openai”）。
+        参考【提供商集成的API参考】(https://docs.langchain.com/oss/python/integrations/providers)
+        支持的模型参数用作“**kwargs”。
+    参数：
+        model：模型名称，可以选择以提供者为前缀（例如“openai:gpt-4o”）。
+            如果未指定，将尝试从模型推断“model_provider”。
+            将根据这些模型前缀推断出以下提供程序：
+            - `gpt-...` | `o1...` | `o3...` -> `openai`
+            - `克劳德...` -> `人类`
+            - `亚马逊...` -> `基岩`
+            - `gemini...` -> `google_vertexai`
+            - `命令...` -> `cohere`
+            - `帐户/烟花...` -> `烟花`
+            - `米斯特拉尔...` -> `米斯特拉莱`
+            - `deepseek...` -> `deepseek`
+            - `grok...` -> `xai`
+            - `声纳...` -> `困惑`
+            - `太阳能...` -> `后台`
+        model_provider：模型提供者（如果未指定为模型参数的一部分）
+            （见上文）。
+            支持的`model_provider`值和相应的集成包
+            是：
+            - `openai` -> [`langchain-openai`](https://docs.langchain.com/oss/python/integrations/providers/openai)
+            - `anthropic` -> [`langchain-anthropic`](https://docs.langchain.com/oss/python/integrations/providers/anthropic)
+            - `azure_openai` -> [`langchain-openai`](https://docs.langchain.com/oss/python/integrations/providers/openai)
+            - `azure_ai` -> [`langchain-azure-ai`](https://docs.langchain.com/oss/python/integrations/providers/microsoft)
+            - `google_vertexai` -> [`langchain-google-vertexai`](https://docs.langchain.com/oss/python/integrations/providers/google)
+            - `google_genai` -> [`langchain-google-genai`](https://docs.langchain.com/oss/python/integrations/providers/google)
+            - `bedrock` -> [`langchain-aws`](https://docs.langchain.com/oss/python/integrations/providers/aws)
+            - `bedrock_converse` -> [`langchain-aws`](https://docs.langchain.com/oss/python/integrations/providers/aws)
+            - `cohere` -> [`langchain-cohere`](https://docs.langchain.com/oss/python/integrations/providers/cohere)
+            - `烟花` -> [`langchain-fireworks`](https://docs.langchain.com/oss/python/integrations/providers/fireworks)
+            - `together` -> [`langchain-together`](https://docs.langchain.com/oss/python/integrations/providers/together)
+            - `mistralai` -> [`langchain-mistralai`](https://docs.langchain.com/oss/python/integrations/providers/mistralai)
+            - `huggingface` -> [`langchain-huggingface`](https://docs.langchain.com/oss/python/integrations/providers/huggingface)
+            - `groq` -> [`langchain-groq`](https://docs.langchain.com/oss/python/integrations/providers/groq)
+            - `ollama` -> [`langchain-ollama`](https://docs.langchain.com/oss/python/integrations/providers/ollama)
+            - `google_anthropic_vertex` -> [`langchain-google-vertexai`](https://docs.langchain.com/oss/python/integrations/providers/google)
+            - `deepseek` -> [`langchain-deepseek`](https://docs.langchain.com/oss/python/integrations/providers/deepseek)
+            - `ibm` -> [`langchain-ibm`](https://docs.langchain.com/oss/python/integrations/providers/ibm)- `nvidia` -> [`langchain-nvidia-ai-endpoints`](https://docs.langchain.com/oss/python/integrations/providers/nvidia)
+            - `xai` -> [`langchain-xai`](https://docs.langchain.com/oss/python/integrations/providers/xai)
+            - `perplexity` -> [`langchain-perplexity`](https://docs.langchain.com/oss/python/integrations/providers/perplexity)
+            - `upstage` -> [`langchain-upstage`](https://docs.langchain.com/oss/python/integrations/providers/upstage)
+        可配置字段：哪些模型参数可以在运行时配置：
+            - `None`：没有可配置字段（即固定模型）。
+            - `'any'`：所有字段都是可配置的。 **请参阅下面的安全说明。**
+            - `列表[str] | Tuple[str, ...]`：指定字段是可配置的。
+            如果“config_prefix”是，则假定字段已删除“config_prefix”
+            指定。
+            如果指定了“model”，则默认为“None”。
+            如果未指定`model`，则默认为`("model", "model_provider")`。
+            ！！！警告“安全说明”
+                设置 `configurable_fields="any"` 意味着像 `api_key` 这样的字段，
+                `base_url` 等可以在运行时更改，可能会重定向
+                对不同服务/用户的模型请求。
+                确保如果您接受不受信任的配置，
+                显式枚举“configurable_fields=(...)”。
+        config_prefix：配置键的可选前缀。
+            当同一应用程序中有多个可配置模型时非常有用。
+            如果“config_prefix”是非空字符串，则“model”将是可配置的
+            在运行时通过 `config["configurable"]["{config_prefix}_{param}"]` 键。
+            请参阅下面的示例。
+            如果“config_prefix”是空字符串，则模型将可通过以下方式配置
+            `config["可配置"]["{param}"]`。
+        **kwargs：传递给底层的附加特定于模型的关键字参数
+            聊天模型的`__init__`方法。常用参数包括：
+            - `温度`：用于控制随机性的模型温度。
+            - `max_tokens`：输出令牌的最大数量。
+            - `timeout`：等待响应的最长时间（以秒为单位）。
+            - `max_retries`：失败请求的最大重试次数。
+            - `base_url`：自定义 API 端点 URL。
+            - `速率限制器`：A
+                [`BaseRateLimiter`][langchain_core.rate_limiters.BaseRateLimiter]
+                控制请求率的实例。
+            具体型号请参考供应商的
+            [集成参考](https://reference.langchain.com/python/integrations/)
+            对于所有可用的参数。
+    返回：
+        对应于“model_name”和“model_provider”的“BaseChatModel”
+            如果可配置性被推断为“False”，则指定。如果可配置，
+            聊天模型模拟器，在运行时初始化底层模型一次
+            配置已传入。
+    加薪：
+        ValueError：如果无法推断或不支持“model_provider”。
+        ImportError：如果未安装模型提供程序集成包。
+    ???+ 示例“初始化不可配置的模型”
+        ````蟒蛇
+        # pip 安装 langchain langchain-openai langchain-anthropic langchain-google-vertexai
+        从 langchain.chat_models 导入 init_chat_model
+        o3_mini = init_chat_model("openai:o3-mini", 温度=0)
+        claude_sonnet = init_chat_model("人类：claude-sonnet-4-5-20250929"，温度=0)
+        gemini_2-5_flash = init_chat_model("google_vertexai:gemini-2.5-flash", 温度=0)
+        o3_mini.invoke("你叫什么名字")
+        claude_sonnet.invoke("你叫什么名字")
+        gemini_2-5_flash.invoke("你叫什么名字")
+        ````
+    ???示例“部分可配置模型，无默认值”
+        ````蟒蛇
+        # pip install langchain langchain-openai langchain-anthropic
+        # 中文: pip install langchain langchain-openai langchain-anthropic
+        从 langchain.chat_models 导入 init_chat_model
+        # （如果没有指定模型，我们不需要指定configurable=True。）
+        可配置模型 = init_chat_model(温度=0)
+        configurable_model.invoke("你叫什么名字", config={"configurable": {"model": "gpt-4o"}})
+        # 使用 GPT-4o 生成响应可配置_模型.调用(
+            “你叫什么名字”，
+            config={"可配置": {"型号": "claude-sonnet-4-5-20250929"}},
+        ）
+        ````
+    ???示例“具有默认值的完全可配置模型”
+        ````蟒蛇
+        # pip install langchain langchain-openai langchain-anthropic
+        # 中文: pip install langchain langchain-openai langchain-anthropic
+        从 langchain.chat_models 导入 init_chat_model
+        可配置_model_with_default = init_chat_model(
+            “openai：gpt-4o”，
+            configurable_fields="any", # 这允许我们在运行时配置其他参数，如温度、max_tokens 等。
+            config_prefix =“foo”，
+            温度=0，
+        ）
+        configurable_model_with_default.invoke(“你叫什么名字”)
+        # GPT-4o 响应温度为 0（默认设置）
+        可配置_model_with_default.invoke（
+            “你叫什么名字”，
+            配置={
+                “可配置”：{
+                    "foo_model": "人类:claude-sonnet-4-5-20250929",
+                    “foo_温度”：0.6，
+                }
+            },
+        ）
+        # 覆盖默认值以使用 Sonnet 4.5 和温度 0.6 来生成响应
+        ````
+    ???示例“将工具绑定到可配置模型”
+        您可以在可配置模型上调用任何聊天模型声明方法
+        与使用普通模型的方式相同：
+        ````蟒蛇
+        # pip install langchain langchain-openai langchain-anthropic
+        # 中文: pip install langchain langchain-openai langchain-anthropic
+        从 langchain.chat_models 导入 init_chat_model
+        从 pydantic 导入 BaseModel、Field
+        类 GetWeather(BaseModel):
+            '''获取给定位置的当前天气'''
+            位置：str = Field（...，description =“城市和州，例如加利福尼亚州旧金山”）
+        类 GetPopulation(BaseModel):
+            '''获取给定位置的当前人口'''
+            位置：str = Field（...，description =“城市和州，例如加利福尼亚州旧金山”）
+        可配置模型 = init_chat_model(
+            “gpt-4o”，configurable_fields =（“模型”，“model_provider”），温度= 0
+        ）
+        可配置模型与工具 = 可配置模型.bind_tools(
+            [
+                获取天气，
+                获取人口，
+            ]
+        ）
+        可配置_model_with_tools.invoke（
+            “今天哪个城市更热，哪个城市更大：洛杉矶还是纽约？”
+        ）
+        # 使用 GPT-4o
+        可配置_model_with_tools.invoke（
+            “今天哪个城市更热，哪个城市更大：洛杉矶还是纽约？”,
+            config={"可配置": {"型号": "claude-sonnet-4-5-20250929"}},
+        ）
+        # 使用十四行诗 4.5
+        ````"""  # noqa: E501
     if not model and not configurable_fields:
         configurable_fields = ("model", "model_provider")
     config_prefix = config_prefix or ""
@@ -476,10 +706,18 @@ def _attempt_infer_model_provider(model_name: str) -> str | None:
 
     Returns:
         The inferred provider name, or `None` if no provider could be inferred.
-    """
+    
+
+    中文翻译:
+    尝试从模型名称推断模型提供者。
+    参数：
+        model_name：要推断提供者的模型的名称。
+    返回：
+        推断的提供者名称，如果无法推断提供者，则为“无”。"""
     model_lower = model_name.lower()
 
     # OpenAI models (including newer models and aliases)
+    # 中文: OpenAI 模型（包括较新的模型和别名）
     if any(
         model_lower.startswith(pre)
         for pre in (
@@ -493,42 +731,52 @@ def _attempt_infer_model_provider(model_name: str) -> str | None:
         return "openai"
 
     # Anthropic models
+    # 中文: 人择模型
     if model_lower.startswith("claude"):
         return "anthropic"
 
     # Cohere models
+    # 中文: 连贯模型
     if model_lower.startswith("command"):
         return "cohere"
 
     # Fireworks models
+    # 中文: 烟花模型
     if model_name.startswith("accounts/fireworks"):
         return "fireworks"
 
     # Google models
+    # 中文: 谷歌模型
     if model_lower.startswith("gemini"):
         return "google_vertexai"
 
     # AWS Bedrock models
+    # 中文: AWS 基岩模型
     if model_name.startswith("amazon.") or model_lower.startswith(("anthropic.", "meta.")):
         return "bedrock"
 
     # Mistral models
+    # 中文: 米斯特拉尔型号
     if model_lower.startswith(("mistral", "mixtral")):
         return "mistralai"
 
     # DeepSeek models
+    # 中文: DeepSeek 模型
     if model_lower.startswith("deepseek"):
         return "deepseek"
 
     # xAI models
+    # 中文: xAI模型
     if model_lower.startswith("grok"):
         return "xai"
 
     # Perplexity models
+    # 中文: 困惑度模型
     if model_lower.startswith("sonar"):
         return "perplexity"
 
     # Upstage models
+    # 中文: 抢镜模特
     if model_lower.startswith("solar"):
         return "upstage"
 
@@ -536,8 +784,12 @@ def _attempt_infer_model_provider(model_name: str) -> str | None:
 
 
 def _parse_model(model: str, model_provider: str | None) -> tuple[str, str]:
-    """Parse model name and provider, inferring provider if necessary."""
+    """Parse model name and provider, inferring provider if necessary.
+
+    中文翻译:
+    解析模型名称和提供程序，必要时推断提供程序。"""
     # Handle provider:model format
+    # 中文: 句柄提供者：模型格式
     if (
         not model_provider
         and ":" in model
@@ -547,10 +799,12 @@ def _parse_model(model: str, model_provider: str | None) -> tuple[str, str]:
         model = ":".join(model.split(":")[1:])
 
     # Attempt to infer provider if not specified
+    # 中文: 如果未指定，则尝试推断提供者
     model_provider = model_provider or _attempt_infer_model_provider(model)
 
     if not model_provider:
         # Enhanced error message with suggestions
+        # 中文: 增强的错误消息和建议
         supported_list = ", ".join(sorted(_SUPPORTED_PROVIDERS))
         msg = (
             f"Unable to infer model provider for {model=}. "
@@ -562,6 +816,7 @@ def _parse_model(model: str, model_provider: str | None) -> tuple[str, str]:
         raise ValueError(msg)
 
     # Normalize provider name
+    # 中文: 规范化提供商名称
     model_provider = model_provider.replace("-", "_").lower()
     return model, model_provider
 
@@ -598,10 +853,15 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
     def __getattr__(self, name: str) -> Any:
         if name in _DECLARATIVE_METHODS:
             # Declarative operations that cannot be applied until after an actual model
+            # 中文: 在实际模型之后才能应用的声明性操作
             # object is instantiated. So instead of returning the actual operation,
+            # 中文: 对象被实例化。所以不是返回实际操作，
             # we record the operation and its arguments in a queue. This queue is
+            # 中文: 我们将操作及其参数记录在队列中。这个队列是
             # then applied in order whenever we actually instantiate the model (in
+            # 中文: 然后在我们实际实例化模型时按顺序应用（在
             # self._model()).
+            # 中文: self._model())。
             def queue(*args: Any, **kwargs: Any) -> _ConfigurableModel:
                 queued_declarative_operations = list(
                     self._queued_declarative_operations,
@@ -648,9 +908,13 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
         config: RunnableConfig | None = None,
         **kwargs: Any,
     ) -> _ConfigurableModel:
-        """Bind config to a `Runnable`, returning a new `Runnable`."""
+        """Bind config to a `Runnable`, returning a new `Runnable`.
+
+        中文翻译:
+        将配置绑定到“Runnable”，返回一个新的“Runnable”。"""
         config = RunnableConfig(**(config or {}), **cast("RunnableConfig", kwargs))
         # Ensure config is not None after creation
+        # 中文: 创建后确保配置不是 None
         config = ensure_config(config)
         model_params = self._model_params(config)
         remaining_config = {k: v for k, v in config.items() if k != "configurable"}
@@ -680,10 +944,16 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
     @property
     @override
     def InputType(self) -> TypeAlias:
-        """Get the input type for this `Runnable`."""
+        """Get the input type for this `Runnable`.
+
+        中文翻译:
+        获取此“Runnable”的输入类型。"""
         # This is a version of LanguageModelInput which replaces the abstract
+        # 中文: 这是 LanguageModelInput 的一个版本，它取代了抽象
         # base class BaseMessage with a union of its subclasses, which makes
+        # 中文: 基类 BaseMessage 及其子类的联合，这使得
         # for a much better schema.
+        # 中文: 为了更好的模式。
         return str | StringPromptValue | ChatPromptValueConcrete | list[AnyMessage]
 
     @override
@@ -733,6 +1003,7 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
     ) -> list[Any]:
         config = config or None
         # If <= 1 config use the underlying models batch implementation.
+        # 中文: 如果 <= 1 配置使用底层模型批量实现。
         if config is None or isinstance(config, dict) or len(config) <= 1:
             if isinstance(config, list):
                 config = config[0]
@@ -743,7 +1014,9 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
                 **kwargs,
             )
         # If multiple configs default to Runnable.batch which uses executor to invoke
+        # 中文: 如果多个配置默认为 Runnable.batch 使用执行器调用
         # in parallel.
+        # 中文: 并联。
         return super().batch(
             inputs,
             config=config,
@@ -761,6 +1034,7 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
     ) -> list[Any]:
         config = config or None
         # If <= 1 config use the underlying models batch implementation.
+        # 中文: 如果 <= 1 配置使用底层模型批量实现。
         if config is None or isinstance(config, dict) or len(config) <= 1:
             if isinstance(config, list):
                 config = config[0]
@@ -771,7 +1045,9 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
                 **kwargs,
             )
         # If multiple configs default to Runnable.batch which uses executor to invoke
+        # 中文: 如果多个配置默认为 Runnable.batch 使用执行器调用
         # in parallel.
+        # 中文: 并联。
         return await super().abatch(
             inputs,
             config=config,
@@ -789,6 +1065,7 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
     ) -> Iterator[tuple[int, Any | Exception]]:
         config = config or None
         # If <= 1 config use the underlying models batch implementation.
+        # 中文: 如果 <= 1 配置使用底层模型批量实现。
         if config is None or isinstance(config, dict) or len(config) <= 1:
             if isinstance(config, list):
                 config = config[0]
@@ -799,7 +1076,9 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
                 **kwargs,
             )
         # If multiple configs default to Runnable.batch which uses executor to invoke
+        # 中文: 如果多个配置默认为 Runnable.batch 使用执行器调用
         # in parallel.
+        # 中文: 并联。
         else:
             yield from super().batch_as_completed(  # type: ignore[call-overload]
                 inputs,
@@ -818,6 +1097,7 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
     ) -> AsyncIterator[tuple[int, Any]]:
         config = config or None
         # If <= 1 config use the underlying models batch implementation.
+        # 中文: 如果 <= 1 配置使用底层模型批量实现。
         if config is None or isinstance(config, dict) or len(config) <= 1:
             if isinstance(config, list):
                 config = config[0]
@@ -831,7 +1111,9 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
             ):
                 yield x
         # If multiple configs default to Runnable.batch which uses executor to invoke
+        # 中文: 如果多个配置默认为 Runnable.batch 使用执行器调用
         # in parallel.
+        # 中文: 并联。
         else:
             async for x in super().abatch_as_completed(  # type: ignore[call-overload]
                 inputs,
@@ -957,6 +1239,7 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
             yield x
 
     # Explicitly added to satisfy downstream linters.
+    # 中文: 显式添加以满足下游 linter。
     def bind_tools(
         self,
         tools: Sequence[dict[str, Any] | type[BaseModel] | Callable | BaseTool],
@@ -965,6 +1248,7 @@ class _ConfigurableModel(Runnable[LanguageModelInput, Any]):
         return self.__getattr__("bind_tools")(tools, **kwargs)
 
     # Explicitly added to satisfy downstream linters.
+    # 中文: 显式添加以满足下游 linter。
     def with_structured_output(
         self,
         schema: dict | type[BaseModel],

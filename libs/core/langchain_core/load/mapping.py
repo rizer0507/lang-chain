@@ -15,10 +15,27 @@ because this code was originally in `langchain.schema.messages.AIMessage`.
 
 The mapping allows us to deserialize an `AIMessage` created with an older
 version of LangChain where the code was in a different location.
+
+中文翻译:
+序列化映射。
+该文件包含给定的“lc_namespace”路径之间的映射
+实现从“Serialized”到命名空间的子类
+该类实际所在的位置。
+此映射有助于保持序列化和反序列化的能力
+众所周知的 LangChain 对象，即使它们在代码库中移动
+跨不同的 LangChain 版本。
+例如，“AIMessage”类的代码位于
+`langchain_core.messages.ai.AIMessage`。此消息与
+`["langchain", "schema", "messages", "AIMessage"]` 的 `lc_namespace`,
+因为这段代码最初位于“langchain.schema.messages.AIMessage”中。
+该映射允许我们反序列化使用旧版本创建的“AIMessage”
+LangChain 的版本，其中代码位于不同的位置。
 """
 
 # First value is the value that it is serialized as
+# 中文: 第一个值是序列化后的值
 # Second value is the path to load it from
+# 中文: 第二个值是加载它的路径
 SERIALIZABLE_MAPPING: dict[tuple[str, ...], tuple[str, ...]] = {
     ("langchain", "schema", "messages", "AIMessage"): (
         "langchain_core",
@@ -541,7 +558,9 @@ SERIALIZABLE_MAPPING: dict[tuple[str, ...], tuple[str, ...]] = {
 }
 
 # Needed for backwards compatibility for old versions of LangChain where things
+# 中文: 需要向后兼容旧版本的 LangChain
 # Were in different place
+# 中文: 都在不同的地方
 _OG_SERIALIZABLE_MAPPING: dict[tuple[str, ...], tuple[str, ...]] = {
     ("langchain", "schema", "AIMessage"): (
         "langchain_core",
@@ -589,7 +608,9 @@ _OG_SERIALIZABLE_MAPPING: dict[tuple[str, ...], tuple[str, ...]] = {
 }
 
 # Needed for backwards compatibility for a few versions where we serialized
+# 中文: 需要向后兼容我们序列化的几个版本
 # with langchain_core paths.
+# 中文: 与 langchain_core 路径。
 OLD_CORE_NAMESPACES_MAPPING: dict[tuple[str, ...], tuple[str, ...]] = {
     ("langchain_core", "messages", "ai", "AIMessage"): (
         "langchain_core",

@@ -1,6 +1,24 @@
-"""Draws DAG in ASCII.
+"""ASCII 图形绘制模块。
 
-Adapted from https://github.com/iterative/dvc/blob/main/dvc/dagascii.py.
+本模块提供将 DAG (有向无环图) 绘制为 ASCII 文本的功能。
+
+核心功能:
+---------
+使用 grandalf 库在终端中以 ASCII 艺术形式可视化 Runnable 链。
+
+依赖:
+-----
+需要安装 grandalf 库: `pip install grandalf`
+
+使用示例:
+---------
+>>> from langchain_core.runnables.graph_ascii import draw_ascii
+>>>
+>>> vertices = {"1": "Node1", "2": "Node2", "3": "Node3"}
+>>> edges = [(source, target, None, False) for source, target in [("1", "2"), ("2", "3")]]
+>>> print(draw_ascii(vertices, edges))
+
+注意: 此模块改编自 https://github.com/iterative/dvc/blob/main/dvc/dagascii.py
 """
 
 from __future__ import annotations

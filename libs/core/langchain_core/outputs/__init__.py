@@ -18,6 +18,22 @@ returned by the model provider.
 
 In general, if information is already available in the AIMessage object, it is
 recommended to access it from there rather than from the `LLMResult` object.
+
+中文翻译:
+输出类。
+用于表示语言模型调用的输出和聊天的输出。
+信息的顶层容器是“LLMResult”对象。两者都使用“LLMResult”
+聊天模型和法学硕士。该对象包含语言模型的输出和任何
+模型提供者想要返回的附加信息。
+通过标准可运行方法（例如调用、批处理等）调用模型时：
+- 聊天模型将返回“AIMessage”对象。
+- 法学硕士将返回常规文本字符串。
+此外，用户可以通过以下方式访问法学硕士或聊天模型的原始输出
+回调。 `on_chat_model_end` 和 `on_llm_end` 回调将返回
+LLMResult 对象包含生成的输出和任何附加信息
+由模型提供者返回。
+一般来说，如果 AIMessage 对象中已有信息，则它是
+建议从那里访问它而不是从“LLMResult”对象。
 """
 
 from typing import TYPE_CHECKING

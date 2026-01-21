@@ -29,6 +29,7 @@ from .conftest_store import (
 )
 
 # Global variables for checkpointer and store configurations
+# 中文: 检查指针和存储配置的全局变量
 FAST_MODE = os.getenv("LANGGRAPH_TEST_FAST", "true").lower() in {"true", "1", "yes"}
 
 SYNC_CHECKPOINTER_PARAMS = (
@@ -90,6 +91,7 @@ def deterministic_uuids(mocker: MockerFixture) -> MockerFixture:
 
 
 # checkpointer fixtures
+# 中文: 检查点装置
 
 
 @pytest.fixture(

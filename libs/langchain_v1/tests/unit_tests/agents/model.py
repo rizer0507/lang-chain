@@ -36,7 +36,10 @@ class FakeToolCallingModel(BaseChatModel, Generic[StructuredResponseT]):
         run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
-        """Top Level call."""
+        """Top Level call.
+
+        中文翻译:
+        顶级通话。"""
         is_native = kwargs.get("response_format")
 
         if self.tool_calls:

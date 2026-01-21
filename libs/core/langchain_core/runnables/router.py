@@ -1,4 +1,54 @@
-"""Runnable that routes to a set of Runnables."""
+"""路由 Runnable 模块。
+
+本模块提供 `RouterRunnable`，它可以根据输入的键将请求路由到不同的 Runnable。
+
+核心概念:
+---------
+RouterRunnable 类似于一个路由器或分发器，它:
+1. 接收一个包含 `key` 和 `input` 的字典
+2. 根据 `key` 选择对应的 Runnable
+3. 将 `input` 传递给选中的 Runnable
+4. 返回该 Runnable 的输出
+
+使用场景:
+---------
+- 根据用户意图路由到不同的处理链
+- 实现多分支逻辑
+- 动态选择不同的处理器
+
+使用示例:
+---------
+>>> from langchain_core.runnables.router import RouterRunnable
+>>> from langchain_core.runnables import RunnableLambda
+>>>
+>>> # 定义不同的处理函数
+>>> add = RunnableLambda(func=lambda x: x + 1)
+>>> square = RunnableLambda(func=lambda x: x ** 2)
+>>> double = RunnableLambda(func=lambda x: x * 2)
+>>>
+>>> # 创建路由器
+>>> router = RouterRunnable(runnables={
+...     "add": add,
+...     "square": square,
+...     "double": double,
+... })
+>>>
+>>> # 使用路由器
+>>> router.invoke({"key": "square", "input": 3})
+9
+>>> router.invoke({"key": "add", "input": 3})
+4
+>>> router.invoke({"key": "double", "input": 3})
+6
+
+与 RunnableBranch 的区别:
+---------
+| 特性 | RouterRunnable | RunnableBranch |
+|------|----------------|----------------|
+| 路由方式 | 显式指定 key | 条件函数求值 |
+| 灵活性 | 需要预先定义所有路由 | 支持默认分支 |
+| 使用场景 | 已知路由键 | 动态条件判断 |
+"""
 
 from __future__ import annotations
 
@@ -35,37 +85,58 @@ if TYPE_CHECKING:
 
 
 class RouterInput(TypedDict):
-    """Router input."""
+    """路由器输入类型。
+
+    这是 RouterRunnable 期望的输入格式。
+    """
 
     key: str
-    """The key to route on."""
+    """路由键，用于选择要执行的 Runnable。"""
+
     input: Any
-    """The input to pass to the selected `Runnable`."""
+    """传递给选中 Runnable 的输入。"""
 
 
 class RouterRunnable(RunnableSerializable[RouterInput, Output]):
-    """`Runnable` that routes to a set of `Runnable` based on `Input['key']`.
+    """根据输入键路由到一组 Runnable 的路由器。
 
-    Returns the output of the selected Runnable.
+    返回选中 Runnable 的输出。
 
-    Example:
+    工作原理:
+    1. 接收 `{"key": str, "input": Any}` 格式的输入
+    2. 根据 `key` 从 `runnables` 字典中选择对应的 Runnable
+    3. 用 `input` 调用选中的 Runnable
+    4. 返回该 Runnable 的输出
+
+    属性:
+    -----
+    runnables : Mapping[str, Runnable]
+        键到 Runnable 的映射字典
+
+    使用示例:
         ```python
         from langchain_core.runnables.router import RouterRunnable
         from langchain_core.runnables import RunnableLambda
 
         add = RunnableLambda(func=lambda x: x + 1)
-        square = RunnableLambda(func=lambda x: x**2)
+        square = RunnableLambda(func=lambda x: x ** 2)
 
         router = RouterRunnable(runnables={"add": add, "square": square})
         router.invoke({"key": "square", "input": 3})
+        # 输出: 9
         ```
     """
 
     runnables: Mapping[str, Runnable[Any, Output]]
+    """键到 Runnable 的映射。
+
+    输入中的 `key` 会用于从这个字典中查找要执行的 Runnable。
+    """
 
     @property
     @override
     def config_specs(self) -> list[ConfigurableFieldSpec]:
+        """获取所有子 Runnable 的配置规格。"""
         return get_unique_config_specs(
             spec for step in self.runnables.values() for spec in step.config_specs
         )
@@ -74,10 +145,11 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         self,
         runnables: Mapping[str, Runnable[Any, Output] | Callable[[Any], Output]],
     ) -> None:
-        """Create a `RouterRunnable`.
+        """创建 RouterRunnable。
 
         Args:
-            runnables: A mapping of keys to `Runnable` objects.
+            runnables: 键到 Runnable 对象（或可调用对象）的映射。
+                可调用对象会自动转换为 RunnableLambda。
         """
         super().__init__(
             runnables={key: coerce_to_runnable(r) for key, r in runnables.items()}
@@ -90,13 +162,13 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
     @classmethod
     @override
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """返回 True，表示此类可序列化。"""
         return True
 
     @classmethod
     @override
     def get_lc_namespace(cls) -> list[str]:
-        """Get the namespace of the LangChain object.
+        """获取 LangChain 对象的命名空间。
 
         Returns:
             `["langchain", "schema", "runnable"]`
@@ -107,10 +179,23 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
     def invoke(
         self, input: RouterInput, config: RunnableConfig | None = None, **kwargs: Any
     ) -> Output:
+        """同步调用路由器。
+
+        Args:
+            input: 包含 `key` 和 `input` 的路由器输入。
+            config: 运行配置。
+            **kwargs: 额外参数。
+
+        Returns:
+            选中 Runnable 的输出。
+
+        Raises:
+            ValueError: 如果 key 对应的 Runnable 不存在。
+        """
         key = input["key"]
         actual_input = input["input"]
         if key not in self.runnables:
-            msg = f"No runnable associated with key '{key}'"
+            msg = f"没有与键 '{key}' 关联的 Runnable"
             raise ValueError(msg)
 
         runnable = self.runnables[key]
@@ -123,10 +208,11 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> Output:
+        """异步调用路由器。"""
         key = input["key"]
         actual_input = input["input"]
         if key not in self.runnables:
-            msg = f"No runnable associated with key '{key}'"
+            msg = f"没有与键 '{key}' 关联的 Runnable"
             raise ValueError(msg)
 
         runnable = self.runnables[key]
@@ -141,13 +227,24 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         return_exceptions: bool = False,
         **kwargs: Any | None,
     ) -> list[Output]:
+        """批量调用路由器。
+
+        Args:
+            inputs: 路由器输入列表。
+            config: 运行配置（单个或列表）。
+            return_exceptions: 如果为 True，异常会作为结果返回而不是抛出。
+            **kwargs: 额外参数。
+
+        Returns:
+            输出列表。
+        """
         if not inputs:
             return []
 
         keys = [input_["key"] for input_ in inputs]
         actual_inputs = [input_["input"] for input_ in inputs]
         if any(key not in self.runnables for key in keys):
-            msg = "One or more keys do not have a corresponding runnable"
+            msg = "一个或多个键没有对应的 Runnable"
             raise ValueError(msg)
 
         def invoke(
@@ -178,13 +275,14 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         return_exceptions: bool = False,
         **kwargs: Any | None,
     ) -> list[Output]:
+        """异步批量调用路由器。"""
         if not inputs:
             return []
 
         keys = [input_["key"] for input_ in inputs]
         actual_inputs = [input_["input"] for input_ in inputs]
         if any(key not in self.runnables for key in keys):
-            msg = "One or more keys do not have a corresponding runnable"
+            msg = "一个或多个键没有对应的 Runnable"
             raise ValueError(msg)
 
         async def ainvoke(
@@ -212,10 +310,20 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> Iterator[Output]:
+        """流式调用路由器。
+
+        Args:
+            input: 路由器输入。
+            config: 运行配置。
+            **kwargs: 额外参数。
+
+        Yields:
+            选中 Runnable 的流式输出块。
+        """
         key = input["key"]
         actual_input = input["input"]
         if key not in self.runnables:
-            msg = f"No runnable associated with key '{key}'"
+            msg = f"没有与键 '{key}' 关联的 Runnable"
             raise ValueError(msg)
 
         runnable = self.runnables[key]
@@ -228,10 +336,11 @@ class RouterRunnable(RunnableSerializable[RouterInput, Output]):
         config: RunnableConfig | None = None,
         **kwargs: Any | None,
     ) -> AsyncIterator[Output]:
+        """异步流式调用路由器。"""
         key = input["key"]
         actual_input = input["input"]
         if key not in self.runnables:
-            msg = f"No runnable associated with key '{key}'"
+            msg = f"没有与键 '{key}' 关联的 Runnable"
             raise ValueError(msg)
 
         runnable = self.runnables[key]

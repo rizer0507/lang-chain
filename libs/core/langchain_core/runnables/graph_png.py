@@ -1,4 +1,33 @@
-"""Helper class to draw a state graph into a PNG file."""
+"""PNG 图形绘制模块。
+
+本模块提供将 Runnable 链绘制为 PNG 图像的功能。
+
+核心类:
+--------
+**PngDrawer**: 使用 pygraphviz 将状态图绘制为 PNG
+
+依赖:
+-----
+需要安装以下库:
+- graphviz: 图形可视化工具
+- pygraphviz: Python 绑定 (`pip install pygraphviz`)
+
+使用示例:
+---------
+>>> from langchain_core.runnables.graph_png import PngDrawer
+>>> from langchain_core.prompts import ChatPromptTemplate
+>>> from langchain_openai import ChatOpenAI
+>>>
+>>> chain = ChatPromptTemplate.from_template("...") | ChatOpenAI()
+>>> graph = chain.get_graph()
+>>>
+>>> # 使用 PngDrawer 保存
+>>> drawer = PngDrawer()
+>>> drawer.draw(graph, "chain.png")
+>>>
+>>> # 或直接使用 Graph 的方法
+>>> graph.draw_png("chain.png")
+"""
 
 from itertools import groupby
 from typing import Any, cast

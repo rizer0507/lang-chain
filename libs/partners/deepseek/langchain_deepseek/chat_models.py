@@ -1,4 +1,8 @@
-"""DeepSeek chat models."""
+"""DeepSeek chat models.
+
+中文翻译:
+DeepSeek 聊天模型。
+"""
 
 from __future__ import annotations
 
@@ -114,10 +118,14 @@ class ChatDeepSeek(BaseChatOpenAI):
         await model.ainvoke(messages)
 
         # stream:
+        # 中文: 溪流：
         # async for chunk in (await model.astream(messages))
+        # 中文: async for chunk in (await model.astream(messages))
 
         # batch:
+        # 中文: 批：
         # await model.abatch([messages])
+        # 中文: 等待 model.abatch([消息])
         ```
 
     Tool calling:
@@ -179,29 +187,156 @@ class ChatDeepSeek(BaseChatOpenAI):
         ai_msg = model.invoke(messages)
         ai_msg.response_metadata
         ```
-    """  # noqa: E501
+
+
+    中文翻译:
+    DeepSeek 聊天模型集成可访问 DeepSeek API 中托管的模型。
+    设置：
+        安装“langchain-deepseek”并设置环境变量“DEEPSEEK_API_KEY”。
+        ````bash
+        pip install -U langchain-deepseek
+        导出 DEEPSEEK_API_KEY="your-api-key"
+        ````
+    关键初始化参数 - 完成参数：
+        型号：
+            要使用的 DeepSeek 模型的名称，例如“深度搜索聊天”。
+        温度：
+            取样温度。
+        最大令牌数：
+            生成的最大令牌数。
+    关键初始化参数 — 客户端参数：
+        超时：
+            请求超时。
+        最大重试次数：
+            最大重试次数。
+        api_key:
+            DeepSeek API 密钥。如果没有传入，将从环境变量`DEEPSEEK_API_KEY`中读取。
+    请参阅参数部分中支持的 init args 及其描述的完整列表。
+    实例化：
+        ````蟒蛇
+        从 langchain_deepseek 导入 ChatDeepSeek
+        模型 = ChatDeepSeek(
+            型号=“...”，
+            温度=0，
+            max_tokens=无,
+            超时=无，
+            最大重试次数=2，
+            # api_key="...",
+            # 其他参数...
+        ）
+        ````
+    调用：
+        ````蟒蛇
+        消息 = [
+            ("system", "你是一位很有帮助的翻译。将用户句子翻译成法语。"),
+            （“人类”，“我喜欢编程。”），
+        ]
+        模型.调用（消息）
+        ````
+    流：
+        ````蟒蛇
+        对于 model.stream(messages) 中的块：
+            打印（块.文本，结束=“”）
+        ````
+        ````蟒蛇
+        流 = model.stream(消息)
+        完整 = 下一个（流）
+        对于流中的块：
+            完整+=块
+        满
+        ````
+    异步：
+        ````蟒蛇
+        等待 model.ainvoke(消息)
+        # 流：
+        # async for chunk in (await model.astream(messages))
+        # 中文: async for chunk in (await model.astream(messages))
+        # 批次：
+        # 等待 model.abatch([messages])
+        ````
+    工具调用：
+        ````蟒蛇
+        从 pydantic 导入 BaseModel、Field
+        类 GetWeather(BaseModel):
+            '''获取给定位置的当前天气'''
+            位置：str = Field（...，description =“城市和州，例如加利福尼亚州旧金山”）
+        类 GetPopulation(BaseModel):
+            '''获取给定位置的当前人口'''
+            位置：str = Field（...，description =“城市和州，例如加利福尼亚州旧金山”）
+        model_with_tools = model.bind_tools([GetWeather, GetPopulation])
+        ai_msg = model_with_tools.invoke("今天哪个城市更热，哪个城市更大：洛杉矶还是纽约？")
+        ai_msg.tool_calls
+        ````
+        有关更多信息，请参阅“ChatDeepSeek.bind_tools()”方法。
+    结构化输出：
+        ````蟒蛇
+        从输入 import 可选
+        从 pydantic 导入 BaseModel、Field
+        笑话类（基础模型）：
+            '''告诉用户的笑话。'''
+            setup: str = Field(description="笑话的设置")
+            笑点：str = Field（描述=“笑话的笑点”）
+            评级：int | None = Field(description="这个笑话有多好笑，从 1 到 10")
+        Structured_Model = model.with_Structured_Output（笑话）
+        Structured_model.invoke("给我讲一个关于猫的笑话")
+        ````
+        有关更多信息，请参阅“ChatDeepSeek.with_structed_output()”。
+    代币使用：
+        ````蟒蛇
+        ai_msg = model.invoke(消息)
+        ai_msg.usage_metadata
+        ````
+        ````蟒蛇
+        {“input_tokens”：28，“output_tokens”：5，“total_tokens”：33}
+        ````
+    响应元数据：
+        ````蟒蛇
+        ai_msg = model.invoke(消息)
+        ai_msg.response_metadata
+        ````
+    """
 
     model_name: str = Field(alias="model")
-    """The name of the model"""
+    """The name of the model
+
+    中文翻译:
+    型号名称
+    """
     api_key: SecretStr | None = Field(
         default_factory=secret_from_env("DEEPSEEK_API_KEY", default=None),
     )
-    """DeepSeek API key"""
+    """DeepSeek API key
+
+    中文翻译:
+    DeepSeek API 密钥
+    """
     api_base: str = Field(
         default_factory=from_env("DEEPSEEK_API_BASE", default=DEFAULT_API_BASE),
     )
-    """DeepSeek API base URL"""
+    """DeepSeek API base URL
+
+    中文翻译:
+    DeepSeek API 基本 URL
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 
     @property
     def _llm_type(self) -> str:
-        """Return type of chat model."""
+        """Return type of chat model.
+
+        中文翻译:
+        聊天模型的返回类型。
+        """
         return "chat-deepseek"
 
     @property
     def lc_secrets(self) -> dict[str, str]:
-        """A map of constructor argument names to secret ids."""
+        """A map of constructor argument names to secret ids.
+
+        中文翻译:
+        构造函数参数名称到秘密 ID 的映射。
+        """
         return {"api_key": "DEEPSEEK_API_KEY"}
 
     def _get_ls_params(
@@ -215,7 +350,11 @@ class ChatDeepSeek(BaseChatOpenAI):
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
-        """Validate necessary environment vars and client params."""
+        """Validate necessary environment vars and client params.
+
+        中文翻译:
+        验证必要的环境变量和客户端参数。
+        """
         if self.api_base == DEFAULT_API_BASE and not (
             self.api_key and self.api_key.get_secret_value()
         ):
@@ -249,7 +388,11 @@ class ChatDeepSeek(BaseChatOpenAI):
 
     @model_validator(mode="after")
     def _set_model_profile(self) -> Self:
-        """Set model profile if not overridden."""
+        """Set model profile if not overridden.
+
+        中文翻译:
+        如果未覆盖，则设置模型配置文件。
+        """
         if self.profile is None:
             self.profile = _get_default_model_profile(self.model_name)
         return self
@@ -269,7 +412,9 @@ class ChatDeepSeek(BaseChatOpenAI):
                 message["content"], list
             ):
                 # DeepSeek API expects assistant content to be a string, not a list.
+                # 中文: DeepSeek API 期望助手内容是字符串，而不是列表。
                 # Extract text blocks and join them, or use empty string if none exist.
+                # 中文: 提取文本块并连接它们，或者如果不存在则使用空字符串。
                 text_parts = [
                     block.get("text", "")
                     for block in message["content"]
@@ -299,6 +444,7 @@ class ChatDeepSeek(BaseChatOpenAI):
                 0
             ].message.reasoning_content
         # Handle use via OpenRouter
+        # 中文: 通过 OpenRouter 处理使用
         elif choices and hasattr(choices[0].message, "model_extra"):
             model_extra = choices[0].message.model_extra
             if isinstance(model_extra, dict) and (
@@ -335,6 +481,7 @@ class ChatDeepSeek(BaseChatOpenAI):
                         reasoning_content
                     )
                 # Handle use via OpenRouter
+                # 中文: 通过 OpenRouter 处理使用
                 elif (reasoning := top.get("delta", {}).get("reasoning")) is not None:
                     generation_chunk.message.additional_kwargs["reasoning_content"] = (
                         reasoning
@@ -414,10 +561,25 @@ class ChatDeepSeek(BaseChatOpenAI):
 
         Returns:
             A Runnable that takes same inputs as a chat model.
+
+
+        中文翻译:
+        将类似工具的对象绑定到此聊天模型。
+        当 `strict=True` 时覆盖父级以使用 beta 端点。
+        参数：
+            工具：绑定到此聊天模型的工具定义列表。
+            tool_choice：模型需要调用哪个工具。
+            strict：如果为 True，则使用 beta API 进行严格的模式验证。
+            parallel_tool_calls：设置为“False”以禁用并行工具使用。
+            **kwargs：传递给父级“bind_tools”的附加参数。
+        返回：
+            与聊天模型采用相同输入的 Runnable。
         """
         # If strict mode is enabled and using default API base, switch to beta endpoint
+        # 中文: 如果启用了严格模式并使用默认 API 库，请切换到 beta 端点
         if strict is True and self.api_base == DEFAULT_API_BASE:
             # Create a new instance with beta endpoint
+            # 中文: 使用 beta 端点创建新实例
             beta_model = self.model_copy(update={"api_base": DEFAULT_BETA_API_BASE})
             return beta_model.bind_tools(
                 tools,
@@ -428,6 +590,7 @@ class ChatDeepSeek(BaseChatOpenAI):
             )
 
         # Otherwise use parent implementation
+        # 中文: 否则使用父实现
         return super().bind_tools(
             tools,
             tool_choice=tool_choice,
@@ -515,15 +678,70 @@ class ChatDeepSeek(BaseChatOpenAI):
                 - `'parsed'`: `None` if there was a parsing error, otherwise the type
                     depends on the `schema` as described above.
                 - `'parsing_error'`: `BaseException | None`
+
+
+        中文翻译:
+        返回格式化以匹配给定模式的输出的模型包装器。
+        参数：
+            schema：输出模式。可以传入为：
+                - OpenAI 函数/工具模式，
+                - JSON 模式，
+                - 一个“TypedDict”类，
+                - 或者 Pydantic 类。
+                如果“schema”是 Pydantic 类，那么模型输出将是
+                该类的 Pydantic 实例，模型生成的字段将是
+                由 Pydantic 类验证。否则模型输出将是
+                dict 并且不会被验证。
+                请参阅“langchain_core.utils.function_calling.convert_to_openai_tool”
+                有关如何正确指定模式字段的类型和描述的更多信息
+                当指定 Pydantic 或 `TypedDict` 类时。
+            method：转向模型生成方法，其中之一：
+                - `'函数调用'`：
+                    使用 DeepSeek 的[工具调用功能](https://api-docs.deepseek.com/guides/function_calling)。
+                - `'json_mode'`：
+                    使用 DeepSeek 的 [JSON 模式功能](https://api-docs.deepseek.com/guides/json_mode)。
+            包括原始：
+                如果“False”，则仅返回解析的结构化输出。
+                如果模型输出解析期间发生错误，则会引发错误。
+                如果“True”，则原始模型响应（“BaseMessage”）和
+                将返回解析后的模型响应。
+                如果在输出解析期间发生错误，它将被捕获并返回
+                以及。
+                最终输出始终是一个带有键“raw”、“parsed”和
+                `'解析错误'`。
+            严格：
+                生成函数时是否启用严格的架构遵循
+                打电话。当设置为“True”时，DeepSeek 将使用 beta API 端点
+                (`https://api.deepseek.com/beta`) 用于严格的模式验证。
+                这可确保模型输出与定义的模式完全匹配。
+                !!!注释
+                    DeepSeek的严格模式要求所有对象属性都被标记
+                    根据架构中的要求。
+            kwargs：不支持其他关键字参数。
+        返回：
+            一个“Runnable”，其输入与
+                `langchain_core.language_models.chat.BaseChatModel`。如果 `include_raw` 是
+                `False` 和 `schema` 是一个 Pydantic 类，`Runnable` 输出一个实例
+                “schema”（即 Pydantic 对象）。否则，如果 `include_raw` 是
+                `False` 然后 `Runnable` 输出一个 `dict`。
+                如果“include_raw”为“True”，则“Runnable”输出一个带有键的“dict”：
+                - `'原始'`：`BaseMessage`
+                - `'parsed'`：如果出现解析错误则为`None`，否则为类型
+                    取决于上面描述的“模式”。
+                - `'parsing_error'`：`BaseException |无`
         """
         # Some applications require that incompatible parameters (e.g., unsupported
+        # 中文: 某些应用程序需要不兼容的参数（例如，不支持的参数）
         # methods) be handled.
+        # 中文: 方法）进行处理。
         if method == "json_schema":
             method = "function_calling"
 
         # If strict mode is enabled and using default API base, switch to beta endpoint
+        # 中文: 如果启用了严格模式并使用默认 API 库，请切换到 beta 端点
         if strict is True and self.api_base == DEFAULT_API_BASE:
             # Create a new instance with beta endpoint
+            # 中文: 使用 beta 端点创建新实例
             beta_model = self.model_copy(update={"api_base": DEFAULT_BETA_API_BASE})
             return beta_model.with_structured_output(
                 schema,

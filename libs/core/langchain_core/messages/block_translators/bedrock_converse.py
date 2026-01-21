@@ -1,4 +1,7 @@
-"""Derivations of standard content blocks from Amazon (Bedrock Converse) content."""
+"""Derivations of standard content blocks from Amazon (Bedrock Converse) content.
+
+中文翻译:
+标准内容块源自 Amazon (Bedrock Converse) 内容。"""
 
 import base64
 from collections.abc import Iterable
@@ -15,7 +18,10 @@ def _bytes_to_b64_str(bytes_: bytes) -> str:
 def _populate_extras(
     standard_block: types.ContentBlock, block: dict[str, Any], known_fields: set[str]
 ) -> types.ContentBlock:
-    """Mutate a block, populating extras."""
+    """Mutate a block, populating extras.
+
+    中文翻译:
+    改变一个块，填充额外的东西。"""
     if standard_block.get("type") == "non_standard":
         return standard_block
 
@@ -23,7 +29,9 @@ def _populate_extras(
         if key not in known_fields:
             if "extras" not in standard_block:
                 # Below type-ignores are because mypy thinks a non-standard block can
+                # 中文: 下面的类型忽略是因为 mypy 认为非标准块可以
                 # get here, although we exclude them above.
+                # 中文: 到达这里，尽管我们在上面排除了它们。
                 standard_block["extras"] = {}  # type: ignore[typeddict-unknown-key]
             standard_block["extras"][key] = value  # type: ignore[typeddict-item]
 
@@ -47,7 +55,19 @@ def _convert_to_v1_from_converse_input(
 
     Returns:
         Updated list with Converse blocks converted to v1 format.
-    """
+    
+
+    中文翻译:
+    将 Bedrock Converse 格式块转换为 v1 格式。
+    在 `content_blocks` 解析过程中，我们包装未被识别为 v1 的块
+    块作为“非标准”块，原始块存储在“值”中
+    场。该函数尝试解压这些块并转换任何块
+    可能是 v1 ContentBlocks 的相反格式。
+    如果转换失败，该块将保留为“non_standard”块。
+    参数：
+        content：要处理的内容块列表。
+    返回：
+        更新了列表，将 Converse 块转换为 v1 格式。"""
 
     def _iter_blocks() -> Iterable[types.ContentBlock]:
         blocks: list[dict[str, Any]] = [
@@ -150,13 +170,17 @@ def _convert_citation_to_v1(citation: dict[str, Any]) -> types.Annotation:
 
 
 def _convert_to_v1_from_converse(message: AIMessage) -> list[types.ContentBlock]:
-    """Convert Bedrock Converse message content to v1 format."""
+    """Convert Bedrock Converse message content to v1 format.
+
+    中文翻译:
+    将 Bedrock Converse 消息内容转换为 v1 格式。"""
     if (
         message.content == ""
         and not message.additional_kwargs
         and not message.tool_calls
     ):
         # Converse outputs multiple chunks containing response metadata
+        # 中文: Converse 输出多个包含响应元数据的块
         return []
 
     if isinstance(message.content, str):
@@ -209,6 +233,7 @@ def _convert_to_v1_from_converse(message: AIMessage) -> list[types.ContentBlock]
                     and message.chunk_position != "last"
                 ):
                     # Isolated chunk
+                    # 中文: 孤立的块
                     chunk = message.tool_call_chunks[0]
                     tool_call_chunk = types.ToolCallChunk(
                         name=chunk.get("name"),
@@ -223,6 +248,7 @@ def _convert_to_v1_from_converse(message: AIMessage) -> list[types.ContentBlock]
                 else:
                     tool_call_block: types.ToolCall | None = None
                     # Non-streaming or gathered chunk
+                    # 中文: 非流式或聚集式块
                     if len(message.tool_calls) == 1:
                         tool_call_block = {
                             "type": "tool_call",
@@ -288,7 +314,14 @@ def translate_content(message: AIMessage) -> list[types.ContentBlock]:
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从包含 Bedrock Converse 内容的消息中派生标准内容块。
+    参数：
+        message：要翻译的消息。
+    返回：
+        派生的内容块。"""
     return _convert_to_v1_from_converse(message)
 
 
@@ -300,7 +333,14 @@ def translate_content_chunk(message: AIMessageChunk) -> list[types.ContentBlock]
 
     Returns:
         The derived content blocks.
-    """
+    
+
+    中文翻译:
+    从包含 Bedrock Converse 内容的块中派生出标准内容块。
+    参数：
+        message：要翻译的消息块。
+    返回：
+        派生的内容块。"""
     return _convert_to_v1_from_converse(message)
 
 
@@ -308,7 +348,11 @@ def _register_bedrock_converse_translator() -> None:
     """Register the Bedrock Converse translator with the central registry.
 
     Run automatically when the module is imported.
-    """
+    
+
+    中文翻译:
+    Register the Bedrock Converse translator with the central registry.
+    导入模块时自动运行。"""
     from langchain_core.messages.block_translators import (  # noqa: PLC0415
         register_translator,
     )

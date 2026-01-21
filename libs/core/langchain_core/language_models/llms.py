@@ -1,6 +1,10 @@
 """Base interface for traditional large language models (LLMs) to expose.
 
 These are traditionally older models (newer models generally are chat models).
+
+中文翻译:
+用于公开传统大型语言模型 (LLM) 的基本接口。
+这些传统上是较旧的模型（较新的模型通常是聊天模型）。
 """
 
 from __future__ import annotations
@@ -66,7 +70,10 @@ _background_tasks: set[asyncio.Task] = set()
 
 @functools.lru_cache
 def _log_error_once(msg: str) -> None:
-    """Log an error once."""
+    """Log an error once.
+
+    中文翻译:
+    记录一次错误。"""
     logger.error(msg)
 
 
@@ -87,7 +94,18 @@ def create_base_retry_decorator(
 
     Raises:
         ValueError: If the cache is not set and cache is True.
-    """
+    
+
+    中文翻译:
+    为给定的 LLM 创建重试装饰器并提供错误类型列表。
+    参数：
+        error_types：要重试的错误类型列表。
+        max_retries：重试次数。
+        run_manager：运行的回调管理器。
+    返回：
+        重试装饰器。
+    加薪：
+        ValueError：如果未设置缓存并且缓存为True。"""
     logging_ = before_sleep_log(logger, logging.WARNING)
 
     def _before_sleep(retry_state: RetryCallState) -> None:
@@ -115,7 +133,9 @@ def create_base_retry_decorator(
     min_seconds = 4
     max_seconds = 10
     # Wait 2^x * 1 second between each retry starting with
+    # 中文: 每次重试之间等待 2^x * 1 秒
     # 4 seconds, then up to 10 seconds, then 10 seconds afterwards
+    # 中文: 4 秒，然后最多 10 秒，然后 10 秒
     retry_instance: retry_base = retry_if_exception_type(error_types[0])
     for error in error_types[1:]:
         retry_instance |= retry_if_exception_type(error)
@@ -129,7 +149,10 @@ def create_base_retry_decorator(
 
 
 def _resolve_cache(*, cache: BaseCache | bool | None) -> BaseCache | None:
-    """Resolve the cache."""
+    """Resolve the cache.
+
+    中文翻译:
+    解决缓存。"""
     llm_cache: BaseCache | None
     if isinstance(cache, BaseCache):
         llm_cache = cache
@@ -170,7 +193,19 @@ def get_prompts(
 
     Raises:
         ValueError: If the cache is not set and cache is True.
-    """
+    
+
+    中文翻译:
+    获取已缓存的提示。
+    参数：
+        params：参数字典。
+        提示：提示列表。
+        缓存：缓存对象。
+    返回：
+        现有提示、llm_string、缺少提示索引的元组，
+            并缺少提示。
+    加薪：
+        ValueError：如果未设置缓存并且缓存为True。"""
     llm_string = str(sorted(params.items()))
     missing_prompts = []
     missing_prompt_idxs = []
@@ -206,7 +241,19 @@ async def aget_prompts(
 
     Raises:
         ValueError: If the cache is not set and cache is True.
-    """
+    
+
+    中文翻译:
+    获取已缓存的提示。异步版本。
+    参数：
+        params：参数字典。
+        提示：提示列表。
+        缓存：缓存对象。
+    返回：
+        现有提示、llm_string、缺少提示索引的元组，
+            并缺少提示。
+    加薪：
+        ValueError：如果未设置缓存并且缓存为True。"""
     llm_string = str(sorted(params.items()))
     missing_prompts = []
     missing_prompt_idxs = []
@@ -246,7 +293,21 @@ def update_cache(
 
     Raises:
         ValueError: If the cache is not set and cache is True.
-    """
+    
+
+    中文翻译:
+    更新缓存并获取 LLM 输出。
+    参数：
+        缓存：缓存对象。
+        existing_prompts：现有提示的字典。
+        llm_string：LLM 字符串。
+        Missing_prompt_idxs：缺失提示索引的列表。
+        new_results：LLMResult 对象。
+        提示：提示列表。
+    返回：
+        法学硕士输出。
+    加薪：
+        ValueError：如果未设置缓存并且缓存为True。"""
     llm_cache = _resolve_cache(cache=cache)
     for i, result in enumerate(new_results.generations):
         existing_prompts[missing_prompt_idxs[i]] = result
@@ -279,7 +340,21 @@ async def aupdate_cache(
 
     Raises:
         ValueError: If the cache is not set and cache is True.
-    """
+    
+
+    中文翻译:
+    更新缓存并获取 LLM 输出。异步版本。
+    参数：
+        缓存：缓存对象。
+        existing_prompts：现有提示的字典。
+        llm_string：LLM 字符串。
+        Missing_prompt_idxs：缺失提示索引的列表。
+        new_results：LLMResult 对象。
+        提示：提示列表。
+    返回：
+        法学硕士输出。
+    加薪：
+        ValueError：如果未设置缓存并且缓存为True。"""
     llm_cache = _resolve_cache(cache=cache)
     for i, result in enumerate(new_results.generations):
         existing_prompts[missing_prompt_idxs[i]] = result
@@ -293,7 +368,10 @@ class BaseLLM(BaseLanguageModel[str], ABC):
     """Base LLM abstract interface.
 
     It should take in a prompt and return a string.
-    """
+    
+
+    中文翻译:
+    Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know."""
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -302,16 +380,23 @@ class BaseLLM(BaseLanguageModel[str], ABC):
     @functools.cached_property
     def _serialized(self) -> dict[str, Any]:
         # self is always a Serializable object in this case, thus the result is
+        # 中文: 在这种情况下，self 始终是可序列化对象，因此结果是
         # guaranteed to be a dict since dumps uses the default callback, which uses
+        # 中文: 保证是一个字典，因为 dumps 使用默认回调，它使用
         # obj.to_json which always returns TypedDict subclasses
+        # 中文: obj.to_json 总是返回 TypedDict 子类
         return cast("dict[str, Any]", dumpd(self))
 
     # --- Runnable methods ---
+    # 中文: --- 可运行的方法 ---
 
     @property
     @override
     def OutputType(self) -> type[str]:
-        """Get the input type for this `Runnable`."""
+        """Get the input type for this `Runnable`.
+
+        中文翻译:
+        获取此“Runnable”的输入类型。"""
         return str
 
     def _convert_input(self, model_input: LanguageModelInput) -> PromptValue:
@@ -332,8 +417,12 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         stop: list[str] | None = None,
         **kwargs: Any,
     ) -> LangSmithParams:
-        """Get standard params for tracing."""
+        """Get standard params for tracing.
+
+        中文翻译:
+        获取用于跟踪的标准参数。"""
         # get default provider from class name
+        # 中文: 从类名获取默认提供者
         default_provider = self.__class__.__name__
         default_provider = default_provider.removesuffix("LLM")
         default_provider = default_provider.lower()
@@ -343,6 +432,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             ls_params["ls_stop"] = stop
 
         # model
+        # 中文: 模型
         if "model" in kwargs and isinstance(kwargs["model"], str):
             ls_params["ls_model_name"] = kwargs["model"]
         elif hasattr(self, "model") and isinstance(self.model, str):
@@ -351,12 +441,14 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             ls_params["ls_model_name"] = self.model_name
 
         # temperature
+        # 中文: 温度
         if "temperature" in kwargs and isinstance(kwargs["temperature"], float):
             ls_params["ls_temperature"] = kwargs["temperature"]
         elif hasattr(self, "temperature") and isinstance(self.temperature, float):
             ls_params["ls_temperature"] = self.temperature
 
         # max_tokens
+        # 中文: 最大令牌数
         if "max_tokens" in kwargs and isinstance(kwargs["max_tokens"], int):
             ls_params["ls_max_tokens"] = kwargs["max_tokens"]
         elif hasattr(self, "max_tokens") and isinstance(self.max_tokens, int):
@@ -515,6 +607,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
     ) -> Iterator[str]:
         if type(self)._stream == BaseLLM._stream:  # noqa: SLF001
             # model doesn't implement streaming, so use default implementation
+            # 中文: 模型没有实现流式传输，因此使用默认实现
             yield self.invoke(input, config=config, stop=stop, **kwargs)
         else:
             prompt = self._convert_input(input).to_string()
@@ -643,6 +736,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         await run_manager.on_llm_end(LLMResult(generations=[[generation]]))
 
     # --- Custom methods ---
+    # 中文: --- 自定义方法 ---
 
     @abstractmethod
     def _generate(
@@ -666,7 +760,19 @@ class BaseLLM(BaseLanguageModel[str], ABC):
 
         Returns:
             The LLM result.
-        """
+        
+
+        中文翻译:
+        根据给定的提示运行 LLM。
+        参数：
+            提示：生成的提示。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+                如果不支持停止标记，请考虑引发“NotImplementedError”。
+            run_manager：运行的回调管理器。
+        返回：
+            LLM结果。"""
 
     async def _agenerate(
         self,
@@ -689,7 +795,19 @@ class BaseLLM(BaseLanguageModel[str], ABC):
 
         Returns:
             The LLM result.
-        """
+        
+
+        中文翻译:
+        根据给定的提示运行 LLM。
+        参数：
+            提示：生成的提示。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+                如果不支持停止标记，请考虑引发“NotImplementedError”。
+            run_manager：运行的回调管理器。
+        返回：
+            LLM结果。"""
         return await run_in_executor(
             None,
             self._generate,
@@ -727,7 +845,24 @@ class BaseLLM(BaseLanguageModel[str], ABC):
 
         Yields:
             Generation chunks.
-        """
+        
+
+        中文翻译:
+        根据给定的提示流式传输 LLM。
+        该方法应该由支持流的子类重写。
+        如果未实现，则调用流的默认行为将是
+        回退到模型的非流版本并返回
+        输出作为单个块。
+        参数：
+            提示：生成的提示。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+            run_manager：运行的回调管理器。
+            **kwargs：任意附加关键字参数。
+                这些通常会传递给模型提供者 API 调用。
+        产量：
+            生成块。"""
         raise NotImplementedError
 
     async def _astream(
@@ -756,7 +891,23 @@ class BaseLLM(BaseLanguageModel[str], ABC):
 
         Yields:
             Generation chunks.
-        """
+        
+
+        中文翻译:
+        _stream 方法的异步版本。
+        默认实现使用同步 _stream 方法并将其包装在
+        异步迭代器。需要提供真正的异步实现的子类
+        应该重写这个方法。
+        参数：
+            提示：生成的提示。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+            run_manager：运行的回调管理器。
+            **kwargs：任意附加关键字参数。
+                这些通常会传递给模型提供者 API 调用。
+        产量：
+            生成块。"""
         iterator = await run_in_executor(
             None,
             self._stream,
@@ -892,7 +1043,43 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         Returns:
             An `LLMResult`, which contains a list of candidate `Generations` for each
                 input prompt and additional model provider-specific output.
-        """
+        
+
+        中文翻译:
+        将一系列提示传递给模型并返回几代。
+        此方法应该对公开批量的模型使用批量调用
+        API。
+        当您想要执行以下操作时，请使用此方法：
+        1.利用批量调用的优势，
+        2. 需要模型的更多输出而不仅仅是顶部生成的值，
+        3.正在构建与底层语言模型无关的链
+            类型（例如，纯文本完成模型与聊天模型）。
+        参数：
+            提示：字符串提示列表。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+            回调：要传递的“回调”。
+                用于执行附加功能，例如日志记录或
+                流式传输，贯穿一代。
+            标签：与每个提示关联的标签列表。如果提供的话，长度
+                列表的长度必须与提示列表的长度匹配。
+            元数据：与每个提示关联的元数据字典列表。如果
+                前提是，列表的长度必须与提示的长度匹配
+                列表。
+            run_name：与每个提示关联的运行名称列表。如果提供，则
+                列表的长度必须与提示列表的长度匹配。
+            run_id：与每个提示关联的运行 ID 列表。如果提供，则
+                列表的长度必须与提示列表的长度匹配。
+            **kwargs：任意附加关键字参数。
+                这些通常会传递给模型提供者 API 调用。
+        加薪：
+            ValueError: 如果提示不是列表。
+            ValueError：如果“callbacks”、“tags”、“metadata”的长度或
+                `run_name`（如果提供）与提示的长度不匹配。
+        返回：
+            一个“LLMResult”，其中包含每个候选“Generations”的列表
+                输入提示和附加模型提供者特定的输出。"""
         if not isinstance(prompts, list):
             msg = (
                 "Argument 'prompts' is expected to be of type list[str], received"
@@ -900,6 +1087,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             )
             raise ValueError(msg)  # noqa: TRY004
         # Create callback managers
+        # 中文: 创建回调管理器
         if isinstance(metadata, list):
             metadata = [
                 {
@@ -922,6 +1110,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             )
         ):
             # We've received a list of callbacks args to apply to each input
+            # 中文: 我们收到了要应用于每个输入的回调参数列表
             if len(callbacks) != len(prompts):
                 msg = "callbacks must be the same length as prompts"
                 raise ValueError(msg)
@@ -964,6 +1153,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             ]
         else:
             # We've received a single callbacks arg to apply to all inputs
+            # 中文: 我们收到了一个应用于所有输入的回调参数
             callback_managers = [
                 CallbackManager.configure(
                     cast("Callbacks", callbacks),
@@ -1166,7 +1356,42 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         Returns:
             An `LLMResult`, which contains a list of candidate `Generations` for each
                 input prompt and additional model provider-specific output.
-        """
+        
+
+        中文翻译:
+        将一系列提示异步传递给模型并返回生成。
+        此方法应该对公开批量的模型使用批量调用
+        API。
+        当您想要执行以下操作时，请使用此方法：
+        1.利用批量调用的优势，
+        2. 需要模型的更多输出而不仅仅是顶部生成的值，
+        3.正在构建与底层语言模型无关的链
+            类型（例如，纯文本完成模型与聊天模型）。
+        参数：
+            提示：字符串提示列表。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+            回调：要传递的“回调”。
+                用于执行附加功能，例如日志记录或
+                流式传输，贯穿一代。
+            标签：与每个提示关联的标签列表。如果提供的话，长度
+                列表的长度必须与提示列表的长度匹配。
+            元数据：与每个提示关联的元数据字典列表。如果
+                前提是，列表的长度必须与提示的长度匹配
+                列表。
+            run_name：与每个提示关联的运行名称列表。如果提供，则
+                列表的长度必须与提示列表的长度匹配。
+            run_id：与每个提示关联的运行 ID 列表。如果提供，则
+                列表的长度必须与提示列表的长度匹配。
+            **kwargs：任意附加关键字参数。
+                这些通常会传递给模型提供者 API 调用。
+        加薪：
+            ValueError：如果“callbacks”、“tags”、“metadata”的长度或
+                `run_name`（如果提供）与提示的长度不匹配。
+        返回：
+            一个“LLMResult”，其中包含每个候选“Generations”的列表
+                输入提示和附加模型提供者特定的输出。"""
         if isinstance(metadata, list):
             metadata = [
                 {
@@ -1181,11 +1406,13 @@ class BaseLLM(BaseLanguageModel[str], ABC):
                 **self._get_ls_params(stop=stop, **kwargs),
             }
         # Create callback managers
+        # 中文: 创建回调管理器
         if isinstance(callbacks, list) and (
             isinstance(callbacks[0], (list, BaseCallbackManager))
             or callbacks[0] is None
         ):
             # We've received a list of callbacks args to apply to each input
+            # 中文: 我们收到了要应用于每个输入的回调参数列表
             if len(callbacks) != len(prompts):
                 msg = "callbacks must be the same length as prompts"
                 raise ValueError(msg)
@@ -1228,6 +1455,7 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             ]
         else:
             # We've received a single callbacks arg to apply to all inputs
+            # 中文: 我们收到了一个应用于所有输入的回调参数
             callback_managers = [
                 AsyncCallbackManager.configure(
                     cast("Callbacks", callbacks),
@@ -1252,7 +1480,9 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         ) = await aget_prompts(params, prompts, self.cache)
 
         # Verify whether the cache is set, and if the cache is set,
+        # 中文: 验证是否设置了缓存，如果设置了缓存，
         # verify whether the cache is available.
+        # 中文: 验证缓存是否可用。
         new_arg_supported = inspect.signature(self._agenerate).parameters.get(
             "run_manager"
         )
@@ -1336,7 +1566,10 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> str:
-        """Check Cache and run the LLM on the given prompt and input."""
+        """Check Cache and run the LLM on the given prompt and input.
+
+        中文翻译:
+        检查缓存并根据给定的提示和输入运行 LLM。"""
         result = await self.agenerate(
             [prompt],
             stop=stop,
@@ -1348,18 +1581,27 @@ class BaseLLM(BaseLanguageModel[str], ABC):
         return result.generations[0][0].text
 
     def __str__(self) -> str:
-        """Return a string representation of the object for printing."""
+        """Return a string representation of the object for printing.
+
+        中文翻译:
+        返回用于打印的对象的字符串表示形式。"""
         cls_name = f"\033[1m{self.__class__.__name__}\033[0m"
         return f"{cls_name}\nParams: {self._identifying_params}"
 
     @property
     @abstractmethod
     def _llm_type(self) -> str:
-        """Return type of llm."""
+        """Return type of llm.
+
+        中文翻译:
+        返回类型为 llm。"""
 
     @override
     def dict(self, **kwargs: Any) -> dict:
-        """Return a dictionary of the LLM."""
+        """Return a dictionary of the LLM.
+
+        中文翻译:
+        返回 LLM 的字典。"""
         starter_dict = dict(self._identifying_params)
         starter_dict["_type"] = self._llm_type
         return starter_dict
@@ -1377,14 +1619,27 @@ class BaseLLM(BaseLanguageModel[str], ABC):
             ```python
             llm.save(file_path="path/llm.yaml")
             ```
-        """
+        
+
+        中文翻译:
+        保存法学硕士。
+        参数：
+            file_path：保存 LLM 的文件路径。
+        加薪：
+            ValueError：如果文件路径不是字符串或 Path 对象。
+        示例：
+            ````蟒蛇
+            llm.save(file_path="路径/llm.yaml")
+            ````"""
         # Convert file to Path object.
+        # 中文: 将文件转换为 Path 对象。
         save_path = Path(file_path)
 
         directory_path = save_path.parent
         directory_path.mkdir(parents=True, exist_ok=True)
 
         # Fetch dictionary to save
+        # 中文: 获取字典并保存
         prompt_dict = self.dict()
 
         if save_path.suffix == ".json":
@@ -1421,7 +1676,27 @@ class LLM(BaseLLM):
         `astream` will use `_astream` if provided, otherwise it will implement
         a fallback behavior that will use `_stream` if `_stream` is implemented,
         and use `_acall` if `_stream` is not implemented.
-    """
+    
+
+    中文翻译:
+    用于实现自定义 LLM 的简单界面。
+    您应该对此类进行子类化并实现以下内容：
+    - `_call` 方法：根据给定的提示和输入运行 LLM（由 `invoke` 使用）。
+    - `_identifying_params` 属性：返回识别参数的字典
+        这对于缓存和跟踪目的至关重要。识别参数
+        是一个识别 LLM 的字典。
+        它主要应包含“model_name”。
+    可选：重写以下方法以提供更多优化：
+    - `_acall`：提供 `_call` 方法的本机异步版本。
+        如果未提供，将使用委托给同步版本
+        `run_in_executor`。 （由“ainvoke”使用）。
+    - `_stream`：根据给定的提示和输入流式传输 LLM。
+        如果提供了 `stream` 将使用 `_stream`，否则它
+        使用“_call”，输出将以一大块形式到达。
+    - `_astream`：重写以提供 `_stream` 方法的本机异步版本。
+        如果提供了 `astream` 将使用 `_astream`，否则它将实现
+        如果实现了“_stream”，则将使用“_stream”的后备行为，
+        如果未实现“_stream”，则使用“_acall”。"""
 
     @abstractmethod
     def _call(
@@ -1450,7 +1725,22 @@ class LLM(BaseLLM):
 
         Returns:
             The model output as a string. SHOULD NOT include the prompt.
-        """
+        
+
+        中文翻译:
+        对给定的输入运行 LLM。
+        重写此方法以实现 LLM 逻辑。
+        参数：
+            提示：生成的提示。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+                如果不支持停止标记，请考虑引发“NotImplementedError”。
+            run_manager：运行的回调管理器。
+            **kwargs：任意附加关键字参数。
+                这些通常会传递给模型提供者 API 调用。
+        返回：
+            模型输出为字符串。不应包含提示。"""
 
     async def _acall(
         self,
@@ -1480,7 +1770,24 @@ class LLM(BaseLLM):
 
         Returns:
             The model output as a string. SHOULD NOT include the prompt.
-        """
+        
+
+        中文翻译:
+        _call 方法的异步版本。
+        默认实现委托给同步 _call 方法，使用
+        `run_in_executor`。需要提供真正的异步实现的子类
+        应重写此方法以减少使用“run_in_executor”的开销。
+        参数：
+            提示：生成的提示。
+            stop：生成时使用的停止词。
+                模型输出在第一次出现这些情况时被切断
+                子串。
+                如果不支持停止标记，请考虑引发“NotImplementedError”。
+            run_manager：运行的回调管理器。
+            **kwargs：任意附加关键字参数。
+                这些通常会传递给模型提供者 API 调用。
+        返回：
+            模型输出为字符串。不应包含提示。"""
         return await run_in_executor(
             None,
             self._call,

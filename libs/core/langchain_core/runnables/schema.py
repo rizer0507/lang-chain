@@ -1,4 +1,48 @@
-"""Module contains typedefs that are used with `Runnable` objects."""
+"""Runnable 对象使用的类型定义模块。
+
+本模块包含与 `Runnable` 对象一起使用的 TypedDict 类型定义，
+主要用于 `astream_events` 方法产生的流式事件。
+
+核心类型:
+---------
+1. **StreamEvent**: 流式事件的联合类型
+2. **StandardStreamEvent**: 标准流式事件
+3. **CustomStreamEvent**: 自定义流式事件
+4. **EventData**: 事件数据
+
+事件类型说明:
+---------
+事件名称格式: `on_[runnable_type]_(start|stream|end)`
+
+Runnable 类型:
+- **llm**: 非聊天模型
+- **chat_model**: 聊天模型
+- **prompt**: 提示模板（如 ChatPromptTemplate）
+- **tool**: 工具（通过 @tool 装饰器定义或继承自 Tool/BaseTool）
+- **chain**: 大多数 Runnable 对象
+
+事件阶段:
+- **start**: Runnable 开始执行时
+- **stream**: Runnable 流式输出时
+- **end**: Runnable 结束执行时
+
+使用示例:
+---------
+>>> from langchain_core.runnables import RunnableLambda
+>>>
+>>> async def reverse(s: str) -> str:
+...     return s[::-1]
+>>>
+>>> chain = RunnableLambda(func=reverse)
+>>>
+>>> events = [event async for event in chain.astream_events("hello")]
+>>> # events 会包含:
+>>> # [
+>>> #     {"event": "on_chain_start", "data": {"input": "hello"}, ...},
+>>> #     {"event": "on_chain_stream", "data": {"chunk": "olleh"}, ...},
+>>> #     {"event": "on_chain_end", "data": {"output": "olleh"}, ...},
+>>> # ]
+"""
 
 from __future__ import annotations
 
@@ -11,172 +55,179 @@ if TYPE_CHECKING:
 
 
 class EventData(TypedDict, total=False):
-    """Data associated with a streaming event."""
+    """与流式事件关联的数据。
+
+    包含事件的输入、输出、错误和流式块信息。
+    不同阶段的事件包含不同的字段。
+    """
 
     input: Any
-    """The input passed to the `Runnable` that generated the event.
+    """传递给生成此事件的 `Runnable` 的输入。
 
-    Inputs will sometimes be available at the *START* of the `Runnable`, and
-    sometimes at the *END* of the `Runnable`.
+    输入有时在 *START* 事件时可用，有时在 *END* 事件时可用。
 
-    If a `Runnable` is able to stream its inputs, then its input by definition
-    won't be known until the *END* of the `Runnable` when it has finished streaming
-    its inputs.
+    如果 Runnable 能够流式处理其输入，则其输入在流式处理完成（*END*）之前
+    是未知的。
     """
+
     error: NotRequired[BaseException]
-    """The error that occurred during the execution of the `Runnable`.
+    """在执行 `Runnable` 期间发生的错误。
 
-    This field is only available if the `Runnable` raised an exception.
+    此字段仅在 Runnable 抛出异常时可用。
 
-    !!! version-added "Added in `langchain-core` 1.0.0"
+    !!! version-added "在 `langchain-core` 1.0.0 中添加"
     """
+
     output: Any
-    """The output of the `Runnable` that generated the event.
+    """生成此事件的 `Runnable` 的输出。
 
-    Outputs will only be available at the *END* of the `Runnable`.
+    输出仅在 *END* 事件时可用。
 
-    For most `Runnable` objects, this field can be inferred from the `chunk` field,
-    though there might be some exceptions for special a cased `Runnable` (e.g., like
-    chat models), which may return more information.
+    对于大多数 Runnable 对象，此字段可以从 `chunk` 字段推断出来，
+    但某些特殊的 Runnable（如聊天模型）可能返回更多信息。
     """
-    chunk: Any
-    """A streaming chunk from the output that generated the event.
 
-    chunks support addition in general, and adding them up should result
-    in the output of the `Runnable` that generated the event.
+    chunk: Any
+    """生成此事件的输出的流式块。
+
+    块通常支持加法运算，将它们相加应该得到
+    生成此事件的 Runnable 的完整输出。
     """
 
 
 class BaseStreamEvent(TypedDict):
-    """Streaming event.
+    """流式事件的基类。
 
-    Schema of a streaming event which is produced from the `astream_events` method.
+    这是 `astream_events` 方法产生的流式事件的模式。
 
-    Example:
+    使用示例:
         ```python
         from langchain_core.runnables import RunnableLambda
 
-
         async def reverse(s: str) -> str:
             return s[::-1]
-
 
         chain = RunnableLambda(func=reverse)
 
         events = [event async for event in chain.astream_events("hello")]
 
-        # Will produce the following events
-        # (where some fields have been omitted for brevity):
+        # 将产生以下事件（省略了部分字段）:
         [
             {
                 "data": {"input": "hello"},
                 "event": "on_chain_start",
-                "metadata": {},
                 "name": "reverse",
-                "tags": [],
             },
             {
                 "data": {"chunk": "olleh"},
                 "event": "on_chain_stream",
-                "metadata": {},
                 "name": "reverse",
-                "tags": [],
             },
             {
                 "data": {"output": "olleh"},
                 "event": "on_chain_end",
-                "metadata": {},
                 "name": "reverse",
-                "tags": [],
             },
         ]
         ```
     """
 
     event: str
-    """Event names are of the format: `on_[runnable_type]_(start|stream|end)`.
+    """事件名称，格式为: `on_[runnable_type]_(start|stream|end)`。
 
-    Runnable types are one of:
+    Runnable 类型包括:
 
-    - **llm** - used by non chat models
-    - **chat_model** - used by chat models
-    - **prompt** --  e.g., `ChatPromptTemplate`
-    - **tool** -- from tools defined via `@tool` decorator or inheriting
-        from `Tool`/`BaseTool`
-    - **chain** - most `Runnable` objects are of this type
+    - **llm**: 非聊天模型使用
+    - **chat_model**: 聊天模型使用
+    - **prompt**: 提示模板（如 ChatPromptTemplate）
+    - **tool**: 通过 @tool 装饰器定义或继承自 Tool/BaseTool 的工具
+    - **chain**: 大多数 Runnable 对象属于此类型
 
-    Further, the events are categorized as one of:
+    事件阶段:
 
-    - **start** - when the `Runnable` starts
-    - **stream** - when the `Runnable` is streaming
-    - **end* - when the `Runnable` ends
+    - **start**: Runnable 开始执行时触发
+    - **stream**: Runnable 流式输出时触发
+    - **end**: Runnable 结束执行时触发
 
-    start, stream and end are associated with slightly different `data` payload.
-
-    Please see the documentation for `EventData` for more details.
+    不同阶段的 `data` 负载略有不同。
+    详见 `EventData` 的文档。
     """
+
     run_id: str
-    """An randomly generated ID to keep track of the execution of the given `Runnable`.
+    """随机生成的 ID，用于追踪 Runnable 的执行。
 
-    Each child `Runnable` that gets invoked as part of the execution of a parent
-    `Runnable` is assigned its own unique ID.
+    作为父 Runnable 执行一部分被调用的每个子 Runnable
+    都会被分配自己独特的 ID。
     """
+
     tags: NotRequired[list[str]]
-    """Tags associated with the `Runnable` that generated this event.
+    """与生成此事件的 `Runnable` 关联的标签。
 
-    Tags are always inherited from parent `Runnable` objects.
+    标签总是从父 Runnable 对象继承。
 
-    Tags can either be bound to a `Runnable` using `.with_config({"tags":  ["hello"]})`
-    or passed at run time using `.astream_events(..., {"tags": ["hello"]})`.
+    标签可以通过 `.with_config({"tags": ["hello"]})` 绑定到 Runnable，
+    或者在运行时通过 `.astream_events(..., {"tags": ["hello"]})` 传递。
     """
+
     metadata: NotRequired[dict[str, Any]]
-    """Metadata associated with the `Runnable` that generated this event.
+    """与生成此事件的 `Runnable` 关联的元数据。
 
-    Metadata can either be bound to a `Runnable` using
+    元数据可以通过以下方式绑定到 Runnable:
 
-        `.with_config({"metadata": { "foo": "bar" }})`
+        `.with_config({"metadata": {"foo": "bar"}})`
 
-    or passed at run time using
+    或者在运行时传递:
 
-        `.astream_events(..., {"metadata": {"foo": "bar"}})`.
+        `.astream_events(..., {"metadata": {"foo": "bar"}})`
     """
 
     parent_ids: Sequence[str]
-    """A list of the parent IDs associated with this event.
+    """与此事件关联的父 ID 列表。
 
-    Root Events will have an empty list.
+    根事件的列表为空。
 
-    For example, if a `Runnable` A calls `Runnable` B, then the event generated by
-    `Runnable` B will have `Runnable` A's ID in the `parent_ids` field.
+    例如，如果 Runnable A 调用 Runnable B，
+    则 Runnable B 生成的事件的 `parent_ids` 中会包含 Runnable A 的 ID。
 
-    The order of the parent IDs is from the root parent to the immediate parent.
+    父 ID 的顺序是从根父级到直接父级。
 
-    Only supported as of v2 of the astream events API. v1 will return an empty list.
+    仅在 astream_events API v2 中支持。v1 将返回空列表。
     """
 
 
 class StandardStreamEvent(BaseStreamEvent):
-    """A standard stream event that follows LangChain convention for event data."""
+    """遵循 LangChain 事件数据约定的标准流式事件。"""
 
     data: EventData
-    """Event data.
+    """事件数据。
 
-    The contents of the event data depend on the event type.
+    事件数据的内容取决于事件类型。
     """
+
     name: str
-    """The name of the `Runnable` that generated the event."""
+    """生成此事件的 `Runnable` 的名称。"""
 
 
 class CustomStreamEvent(BaseStreamEvent):
-    """Custom stream event created by the user."""
+    """用户创建的自定义流式事件。
 
-    # Overwrite the event field to be more specific.
+    可以通过 `adispatch_custom_event` 方法创建自定义事件。
+    """
+
+    # 覆盖 event 字段使其更具体
     event: Literal["on_custom_event"]  # type: ignore[misc]
-    """The event type."""
+    """事件类型，固定为 "on_custom_event"。"""
+
     name: str
-    """User defined name for the event."""
+    """用户定义的事件名称。"""
+
     data: Any
-    """The data associated with the event. Free form and can be anything."""
+    """与事件关联的数据。自由格式，可以是任何内容。"""
 
 
+# 流式事件类型别名
 StreamEvent = StandardStreamEvent | CustomStreamEvent
+"""流式事件的联合类型。
+
+可以是 StandardStreamEvent（标准事件）或 CustomStreamEvent（自定义事件）。
+"""

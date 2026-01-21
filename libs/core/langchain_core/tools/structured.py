@@ -1,4 +1,7 @@
-"""Structured tool."""
+"""Structured tool.
+
+中文翻译:
+结构化工具。"""
 
 from __future__ import annotations
 
@@ -17,6 +20,7 @@ from pydantic import Field, SkipValidation
 from typing_extensions import override
 
 # Cannot move to TYPE_CHECKING as _run/_arun parameter annotations are needed at runtime
+# 中文: 无法移动到 TYPE_CHECKING，因为运行时需要 _run/_arun 参数注释
 from langchain_core.callbacks import (
     AsyncCallbackManagerForToolRun,  # noqa: TC001
     CallbackManagerForToolRun,  # noqa: TC001
@@ -38,19 +42,32 @@ if TYPE_CHECKING:
 
 
 class StructuredTool(BaseTool):
-    """Tool that can operate on any number of inputs."""
+    """Tool that can operate on any number of inputs.
+
+    中文翻译:
+    可以对任意数量的输入进行操作的工具。"""
 
     description: str = ""
     args_schema: Annotated[ArgsSchema, SkipValidation()] = Field(
         ..., description="The tool schema."
     )
-    """The input arguments' schema."""
+    """The input arguments' schema.
+
+    中文翻译:
+    输入参数的架构。"""
     func: Callable[..., Any] | None = None
-    """The function to run when the tool is called."""
+    """The function to run when the tool is called.
+
+    中文翻译:
+    调用该工具时要运行的函数。"""
     coroutine: Callable[..., Awaitable[Any]] | None = None
-    """The asynchronous version of the function."""
+    """The asynchronous version of the function.
+
+    中文翻译:
+    该函数的异步版本。"""
 
     # --- Runnable ---
+    # 中文: --- 可运行 ---
 
     # TODO: Is this needed?
     @override
@@ -62,11 +79,13 @@ class StructuredTool(BaseTool):
     ) -> Any:
         if not self.coroutine:
             # If the tool does not implement async, fall back to default implementation
+            # 中文: 如果该工具未实现异步，则回退到默认实现
             return await run_in_executor(config, self.invoke, input, config, **kwargs)
 
         return await super().ainvoke(input, config, **kwargs)
 
     # --- Tool ---
+    # 中文: - - 工具  - -
 
     def _run(
         self,
@@ -85,7 +104,17 @@ class StructuredTool(BaseTool):
 
         Returns:
             The result of the tool execution
-        """
+        
+
+        中文翻译:
+        使用该工具。
+        参数：
+            *args：传递给工具的位置参数
+            config：运行配置
+            run_manager：用于运行的可选回调管理器
+            **kwargs：传递给工具的关键字参数
+        返回：
+            工具执行结果"""
         if self.func:
             if run_manager and signature(self.func).parameters.get("callbacks"):
                 kwargs["callbacks"] = run_manager.get_child()
@@ -112,7 +141,17 @@ class StructuredTool(BaseTool):
 
         Returns:
             The result of the tool execution
-        """
+        
+
+        中文翻译:
+        异步使用该工具。
+        参数：
+            *args：传递给工具的位置参数
+            config：运行配置
+            run_manager：用于运行的可选回调管理器
+            **kwargs：传递给工具的关键字参数
+        返回：
+            工具执行结果"""
         if self.coroutine:
             if run_manager and signature(self.coroutine).parameters.get("callbacks"):
                 kwargs["callbacks"] = run_manager.get_child()
@@ -121,7 +160,9 @@ class StructuredTool(BaseTool):
             return await self.coroutine(*args, **kwargs)
 
         # If self.coroutine is None, then this will delegate to the default
+        # 中文: 如果 self.coroutine 为 None，则这将委托给默认值
         # implementation which is expected to delegate to _run on a separate thread.
+        # 中文: 预期委托给单独线程上的 _run 的实现。
         return await super()._arun(
             *args, config=config, run_manager=run_manager, **kwargs
         )
@@ -185,7 +226,45 @@ class StructuredTool(BaseTool):
             tool.run(1, 2) # 3
 
             ```
-        """
+        
+
+        中文翻译:
+        从给定函数创建工具。
+        有助于从函数创建工具的类方法。
+        参数：
+            func：从中创建工具的函数。
+            协程：从中创建工具的异步函数。
+            名称：工具的名称。默认为函数名称。
+            描述：工具的描述。
+                默认为函数文档字符串。
+            return_direct：是直接返回结果还是作为回调返回。
+            args_schema：工具输入参数的架构。
+            infer_schema：是否从函数的签名推断模式。
+            response_format：工具响应格式。
+                如果“内容”，则该工具的输出被解释为
+                `ToolMessage` 的内容。如果“content_and_artifact”则输出
+                预计是对应于“（内容，工件）”的二元组
+                “ToolMessage”的。
+            parse_docstring：如果`infer_schema`和`parse_docstring`，将尝试
+                从 Google 风格函数文档字符串中解析参数描述。
+            error_on_invalid_docstring：如果提供了“parse_docstring”，请配置
+                是否在无效的 Google 样式文档字符串上引发“ValueError”。
+            **kwargs：传递给工具的附加参数
+        返回：
+            工具。
+        加薪：
+            ValueError：如果未提供该功能。
+            ValueError：如果函数没有文档字符串和描述
+                未提供。
+            类型错误：如果“args_schema”不是“BaseModel”或字典。
+        示例：
+            ````蟒蛇
+            def add(a: int, b: int) -> int:
+                \"\"\"两个数字相加\"\"\"
+                返回 a + b
+            工具 = StructuredTool.from_function(add)
+            工具.运行(1, 2) # 3
+            ````"""
         if func is not None:
             source_function = func
         elif coroutine is not None:
@@ -196,6 +275,7 @@ class StructuredTool(BaseTool):
         name = name or source_function.__name__
         if args_schema is None and infer_schema:
             # schema name is appended within function
+            # 中文: 模式名称附加在函数内
             args_schema = create_schema_from_function(
                 name,
                 source_function,
@@ -229,10 +309,13 @@ class StructuredTool(BaseTool):
             raise ValueError(msg)
         if description is None:
             # Only apply if using the function's docstring
+            # 中文: 仅在使用函数的文档字符串时适用
             description_ = textwrap.dedent(description_).strip()
 
         # Description example:
+        # 中文: 描述示例：
         # search_api(query: str) - Searches the API for the query.
+        # 中文: search_api(query: str) - 在 API 中搜索查询。
         description_ = f"{description_.strip()}"
         return cls(
             name=name,
@@ -262,4 +345,5 @@ def _filter_schema_args(func: Callable) -> list[str]:
     if config_param := _get_runnable_config_param(func):
         filter_args.append(config_param)
     # filter_args.extend(_get_non_model_params(type_hints))
+    # 中文: filter_args.extend(_get_non_model_params(type_hints))
     return filter_args

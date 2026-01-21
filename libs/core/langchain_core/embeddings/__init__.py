@@ -1,4 +1,7 @@
-"""Embeddings."""
+"""Embeddings.
+
+中文翻译:
+嵌入。"""
 
 from typing import TYPE_CHECKING
 

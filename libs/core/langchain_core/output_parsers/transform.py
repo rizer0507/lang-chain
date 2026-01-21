@@ -1,4 +1,7 @@
-"""Base classes for output parsers that can handle streaming input."""
+"""Base classes for output parsers that can handle streaming input.
+
+中文翻译:
+可以处理流输入的输出解析器的基类。"""
 
 from __future__ import annotations
 
@@ -26,7 +29,10 @@ if TYPE_CHECKING:
 
 
 class BaseTransformOutputParser(BaseOutputParser[T]):
-    """Base class for an output parser that can handle streaming input."""
+    """Base class for an output parser that can handle streaming input.
+
+    中文翻译:
+    可以处理流输入的输出解析器的基类。"""
 
     def _transform(
         self,
@@ -68,7 +74,16 @@ class BaseTransformOutputParser(BaseOutputParser[T]):
 
         Yields:
             The transformed output.
-        """
+        
+
+        中文翻译:
+        将输入转换为输出格式。
+        参数：
+            输入：要转换的输入。
+            config：用于转换的配置。
+            **kwargs：附加关键字参数。
+        产量：
+            转换后的输出。"""
         yield from self._transform_stream_with_config(
             input, self._transform, config, run_type="parser"
         )
@@ -89,7 +104,16 @@ class BaseTransformOutputParser(BaseOutputParser[T]):
 
         Yields:
             The transformed output.
-        """
+        
+
+        中文翻译:
+        异步将输入转换为输出格式。
+        参数：
+            输入：要转换的输入。
+            config：用于转换的配置。
+            **kwargs：附加关键字参数。
+        产量：
+            转换后的输出。"""
         async for chunk in self._atransform_stream_with_config(
             input, self._atransform, config, run_type="parser"
         ):
@@ -97,12 +121,19 @@ class BaseTransformOutputParser(BaseOutputParser[T]):
 
 
 class BaseCumulativeTransformOutputParser(BaseTransformOutputParser[T]):
-    """Base class for an output parser that can handle streaming input."""
+    """Base class for an output parser that can handle streaming input.
+
+    中文翻译:
+    可以处理流输入的输出解析器的基类。"""
 
     diff: bool = False
     """In streaming mode, whether to yield diffs between the previous and current
     parsed output, or just the current parsed output.
-    """
+    
+
+    中文翻译:
+    在流模式下，是否产生前一个和当前之间的差异
+    解析的输出，或者只是当前解析的输出。"""
 
     def _diff(
         self,
@@ -119,7 +150,16 @@ class BaseCumulativeTransformOutputParser(BaseTransformOutputParser[T]):
 
         Returns:
             The diff between the previous and current parsed output.
-        """
+        
+
+        中文翻译:
+        将解析的输出转换为 diff 格式。
+        其语义取决于输出解析器。
+        参数：
+            prev：上一个解析的输出。
+            next：当前解析的输出。
+        返回：
+            先前和当前解析输出之间的差异。"""
         raise NotImplementedError
 
     @override

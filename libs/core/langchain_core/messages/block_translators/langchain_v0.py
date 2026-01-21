@@ -1,4 +1,7 @@
-"""Derivations of standard content blocks from LangChain v0 multimodal content."""
+"""Derivations of standard content blocks from LangChain v0 multimodal content.
+
+中文翻译:
+从LangChain v0多模态内容衍生出标准内容块。"""
 
 from typing import Any, cast
 
@@ -22,7 +25,19 @@ def _convert_v0_multimodal_input_to_v1(
 
     Returns:
         v1 content blocks.
-    """
+    
+
+    中文翻译:
+    将 v0 多模式块转换为 v1 格式。
+    在 `content_blocks` 解析过程中，我们包装未被识别为 v1 的块
+    块作为“非标准”块，原始块存储在“值”中
+    场。该函数尝试解压这些块并转换任何 v0 格式
+    块为 v1 格式。
+    如果转换失败，该块将保留为“non_standard”块。
+    参数：
+        content：要处理的内容块列表。
+    返回：
+        v1 内容块。"""
     converted_blocks = []
     unpacked_blocks: list[dict[str, Any]] = [
         cast("dict[str, Any]", block)
@@ -36,6 +51,7 @@ def _convert_v0_multimodal_input_to_v1(
             converted_blocks.append(cast("types.ContentBlock", converted_block))
         elif block.get("type") in types.KNOWN_BLOCK_TYPES:
             # Guard in case this function is used outside of the .content_blocks flow
+            # 中文: 防止此函数在 .content_blocks 流之外使用
             converted_blocks.append(cast("types.ContentBlock", block))
         else:
             converted_blocks.append({"type": "non_standard", "value": block})
@@ -51,7 +67,12 @@ def _convert_legacy_v0_content_block_to_v1(
     Preserves unknown keys as extras to avoid data loss.
 
     Returns the original block unchanged if it's not in v0 format.
-    """
+    
+
+    中文翻译:
+    将 LangChain v0 内容块转换为 v1 格式。
+    将未知密钥保留为额外密钥以避免数据丢失。
+    如果原始块不是 v0 格式，则返回原块。"""
 
     def _extract_v0_extras(block_dict: dict, known_keys: set[str]) -> dict[str, Any]:
         """Extract unknown keys from v0 block to preserve as extras.
@@ -62,19 +83,30 @@ def _convert_legacy_v0_content_block_to_v1(
 
         Returns:
             A dictionary of extra keys not part of the known v0 format.
-        """
+        
+
+        中文翻译:
+        从 v0 块中提取未知密钥以保存为额外内容。
+        参数：
+            block_dict：原始 v0 块字典。
+            known_keys：已知是该块 v0 格式一部分的密钥集。
+        返回：
+            不属于已知 v0 格式的额外键的字典。"""
         return {k: v for k, v in block_dict.items() if k not in known_keys}
 
     # Check if this is actually a v0 format block
+    # 中文: 检查这是否实际上是 v0 格式块
     block_type = block.get("type")
     if block_type not in {"image", "audio", "file"} or "source_type" not in block:
         # Not a v0 format block, return unchanged
+        # 中文: 不是 v0 格式块，返回不变
         return block
 
     if block.get("type") == "image":
         source_type = block.get("source_type")
         if source_type == "url":
             # image-url
+            # 中文: 图片网址
             known_keys = {"mime_type", "type", "source_type", "url"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
@@ -86,6 +118,7 @@ def _convert_legacy_v0_content_block_to_v1(
                 )
 
             # Don't construct with an ID if not present in original block
+            # 中文: 如果原始块中不存在，则不要使用 ID 进行构造
             v1_image_url = types.ImageContentBlock(type="image", url=block["url"])
             if block.get("mime_type"):
                 v1_image_url["mime_type"] = block["mime_type"]
@@ -100,6 +133,7 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_image_url
         if source_type == "base64":
             # image-base64
+            # 中文: 图像-base64
             known_keys = {"mime_type", "type", "source_type", "data"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
@@ -126,9 +160,11 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_image_base64
         if source_type == "id":
             # image-id
+            # 中文: 图像ID
             known_keys = {"type", "source_type", "id"}
             extras = _extract_v0_extras(block, known_keys)
             # For id `source_type`, `id` is the file reference, not block ID
+            # 中文: 对于 id `source_type`，`id` 是文件引用，而不是块 ID
             v1_image_id = types.ImageContentBlock(type="image", file_id=block["id"])
 
             v1_image_id["extras"] = {}
@@ -143,6 +179,7 @@ def _convert_legacy_v0_content_block_to_v1(
         source_type = block.get("source_type")
         if source_type == "url":
             # audio-url
+            # 中文: 音频地址
             known_keys = {"mime_type", "type", "source_type", "url"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
@@ -154,6 +191,7 @@ def _convert_legacy_v0_content_block_to_v1(
                 )
 
             # Don't construct with an ID if not present in original block
+            # 中文: 如果原始块中不存在，则不要使用 ID 进行构造
             v1_audio_url: types.AudioContentBlock = types.AudioContentBlock(
                 type="audio", url=block["url"]
             )
@@ -170,6 +208,7 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_audio_url
         if source_type == "base64":
             # audio-base64
+            # 中文: 音频-base64
             known_keys = {"mime_type", "type", "source_type", "data"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
@@ -196,6 +235,7 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_audio_base64
         if source_type == "id":
             # audio-id
+            # 中文: 音频 ID
             known_keys = {"type", "source_type", "id"}
             extras = _extract_v0_extras(block, known_keys)
             v1_audio_id: types.AudioContentBlock = types.AudioContentBlock(
@@ -214,6 +254,7 @@ def _convert_legacy_v0_content_block_to_v1(
         source_type = block.get("source_type")
         if source_type == "url":
             # file-url
+            # 中文: 文件地址
             known_keys = {"mime_type", "type", "source_type", "url"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
@@ -240,6 +281,7 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_file_url
         if source_type == "base64":
             # file-base64
+            # 中文: 文件-base64
             known_keys = {"mime_type", "type", "source_type", "data"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
@@ -266,16 +308,19 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_file_base64
         if source_type == "id":
             # file-id
+            # 中文: 文件ID
             known_keys = {"type", "source_type", "id"}
             extras = _extract_v0_extras(block, known_keys)
             return types.create_file_block(file_id=block["id"], **extras)
         if source_type == "text":
             # file-text
+            # 中文: 文件文本
             known_keys = {"mime_type", "type", "source_type", "url"}
             extras = _extract_v0_extras(block, known_keys)
             if "id" in block:
                 return types.create_plaintext_block(
                     # In v0, URL points to the text file content
+                    # 中文: 在v0中，URL指向文本文件内容
                     # TODO: attribute this claim
                     text=block["url"],
                     id=block["id"],
@@ -298,4 +343,5 @@ def _convert_legacy_v0_content_block_to_v1(
             return v1_file_text
 
     # If we can't convert, return the block unchanged
+    # 中文: 如果我们无法转换，则原封不动地返回该块
     return block

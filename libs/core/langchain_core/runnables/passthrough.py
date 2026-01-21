@@ -1,4 +1,36 @@
-"""Implementation of the RunnablePassthrough."""
+"""RunnablePassthrough 实现模块。
+
+本模块提供直通类 Runnable，用于传递输入或添加额外的键值对。
+
+核心类:
+--------
+**RunnablePassthrough**: 直通输入，可选地添加额外键
+**RunnableAssign**: 向字典输入添加新键值对
+**RunnablePick**: 从字典中选择指定的键
+
+常用场景:
+---------
+1. 在并行处理中保留原始输入
+2. 使用 `.assign()` 方法向字典添加计算结果
+3. 使用 `RunnablePick` 选择需要的键
+
+使用示例:
+---------
+>>> from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+>>>
+>>> # 保留原始值并添加处理结果
+>>> chain = RunnableParallel(
+...     original=RunnablePassthrough(),
+...     doubled=lambda x: x * 2,
+... )
+>>> chain.invoke(5)  # {'original': 5, 'doubled': 10}
+>>>
+>>> # 使用 assign 向输出添加新键
+>>> chain = {"a": lambda x: x + 1} | RunnablePassthrough.assign(
+...     b=lambda d: d["a"] * 2
+... )
+>>> chain.invoke(1)  # {'a': 2, 'b': 4}
+"""
 
 from __future__ import annotations
 
@@ -48,41 +80,51 @@ if TYPE_CHECKING:
 
 
 def identity(x: Other) -> Other:
-    """Identity function.
+    """恒等函数。
 
     Args:
-        x: Input.
+        x: 输入。
 
     Returns:
-        Output.
+        原样返回输入。
     """
     return x
 
 
 async def aidentity(x: Other) -> Other:
-    """Async identity function.
+    """异步恒等函数。
 
     Args:
-        x: Input.
+        x: 输入。
 
     Returns:
-        Output.
+        原样返回输入。
     """
     return x
 
 
 class RunnablePassthrough(RunnableSerializable[Other, Other]):
-    """Runnable to passthrough inputs unchanged or with additional keys.
+    """直通输入的 Runnable，可选地添加额外键。
 
-    This `Runnable` behaves almost like the identity function, except that it
-    can be configured to add additional keys to the output, if the input is a
-    dict.
+    这个 Runnable 的行为几乎像恒等函数，但如果输入是字典，
+    可以配置为向输出添加额外的键。
 
-    The examples below demonstrate this `Runnable` works using a few simple
-    chains. The chains rely on simple lambdas to make the examples easy to execute
-    and experiment with.
+    主要用途:
+    ---------
+    1. 在 RunnableParallel 中保留原始输入
+    2. 通过 `.assign()` 方法向字典添加新的计算结果
+    3. 在执行过程中记录或监控数据（通过 func 参数）
 
-    Examples:
+    属性:
+    -----
+    func : Callable | None
+        可选的同步函数，在传递输入时被调用（用于副作用）
+    afunc : Callable | None
+        可选的异步函数，在传递输入时被调用
+    input_type : type | None
+        输入类型
+
+    使用示例:
         ```python
         from langchain_core.runnables import (
             RunnableLambda,
@@ -96,29 +138,23 @@ class RunnablePassthrough(RunnableSerializable[Other, Other]):
 
         runnable.invoke(1)  # {'origin': 1, 'modified': 2}
 
-
-        def fake_llm(prompt: str) -> str:  # Fake LLM for the example
+        def fake_llm(prompt: str) -> str:  # 示例用的假 LLM
             return "completion"
 
-
         chain = RunnableLambda(fake_llm) | {
-            "original": RunnablePassthrough(),  # Original LLM output
-            "parsed": lambda text: text[::-1],  # Parsing logic
+            "original": RunnablePassthrough(),  # 原始 LLM 输出
+            "parsed": lambda text: text[::-1],  # 解析逻辑
         }
 
         chain.invoke("hello")  # {'original': 'completion', 'parsed': 'noitelpmoc'}
         ```
 
-    In some cases, it may be useful to pass the input through while adding some
-    keys to the output. In this case, you can use the `assign` method:
-
+    使用 assign 添加键:
         ```python
         from langchain_core.runnables import RunnablePassthrough
 
-
-        def fake_llm(prompt: str) -> str:  # Fake LLM for the example
+        def fake_llm(prompt: str) -> str:
             return "completion"
-
 
         runnable = {
             "llm1": fake_llm,
@@ -350,26 +386,31 @@ _graph_passthrough: RunnablePassthrough = RunnablePassthrough()
 
 
 class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
-    """Runnable that assigns key-value pairs to `dict[str, Any]` inputs.
+    """向 `dict[str, Any]` 输入添加键值对的 Runnable。
 
-    The `RunnableAssign` class takes input dictionaries and, through a
-    `RunnableParallel` instance, applies transformations, then combines
-    these with the original data, introducing new key-value pairs based
-    on the mapper's logic.
+    `RunnableAssign` 类接收输入字典，通过 `RunnableParallel` 实例应用转换，
+    然后将结果与原始数据合并，根据 mapper 的逻辑引入新的键值对。
 
-    Examples:
+    这通常通过 `RunnablePassthrough.assign()` 方法创建，
+    而不是直接实例化。
+
+    工作原理:
+    ---------
+    1. 接收字典输入
+    2. 将输入传递给 mapper（RunnableParallel）
+    3. mapper 计算新的键值对
+    4. 将新键值对与原始输入合并
+
+    使用示例:
         ```python
-        # This is a RunnableAssign
         from langchain_core.runnables.passthrough import (
             RunnableAssign,
             RunnableParallel,
         )
         from langchain_core.runnables.base import RunnableLambda
 
-
         def add_ten(x: dict[str, int]) -> dict[str, int]:
             return {"added": x["input"] + 10}
-
 
         mapper = RunnableParallel(
             {
@@ -379,17 +420,18 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
 
         runnable_assign = RunnableAssign(mapper)
 
-        # Synchronous example
+        # 同步示例
         runnable_assign.invoke({"input": 5})
-        # returns {'input': 5, 'add_step': {'added': 15}}
+        # 返回 {'input': 5, 'add_step': {'added': 15}}
 
-        # Asynchronous example
+        # 异步示例
         await runnable_assign.ainvoke({"input": 5})
-        # returns {'input': 5, 'add_step': {'added': 15}}
+        # 返回 {'input': 5, 'add_step': {'added': 15}}
         ```
     """
 
     mapper: RunnableParallel
+    """用于计算新键值对的 RunnableParallel。"""
 
     def __init__(self, mapper: RunnableParallel[dict[str, Any]], **kwargs: Any) -> None:
         """Create a `RunnableAssign`.
@@ -669,43 +711,43 @@ class RunnableAssign(RunnableSerializable[dict[str, Any], dict[str, Any]]):
 
 
 class RunnablePick(RunnableSerializable[dict[str, Any], Any]):
-    """`Runnable` that picks keys from `dict[str, Any]` inputs.
+    """从 `dict[str, Any]` 输入中选择指定键的 Runnable。
 
-    `RunnablePick` class represents a `Runnable` that selectively picks keys from a
-    dictionary input. It allows you to specify one or more keys to extract
-    from the input dictionary.
+    `RunnablePick` 类代表一个从字典输入中选择性地提取键的 Runnable。
+    它允许你指定一个或多个要从输入字典中提取的键。
 
-    !!! note "Return Type Behavior"
-        The return type depends on the `keys` parameter:
+    返回类型行为:
+    -------------
+    返回类型取决于 `keys` 参数：
 
-        - When `keys` is a `str`: Returns the single value associated with that key
-        - When `keys` is a `list`: Returns a dictionary containing only the selected
-            keys
+    - 当 `keys` 是 `str` 时：返回该键关联的单个值
+    - 当 `keys` 是 `list` 时：返回仅包含所选键的字典
 
-    Example:
+    使用示例:
         ```python
         from langchain_core.runnables.passthrough import RunnablePick
 
         input_data = {
-            "name": "John",
+            "name": "张三",
             "age": 30,
-            "city": "New York",
-            "country": "USA",
+            "city": "北京",
+            "country": "中国",
         }
 
-        # Single key - returns the value directly
+        # 单个键 - 直接返回值
         runnable_single = RunnablePick(keys="name")
         result_single = runnable_single.invoke(input_data)
-        print(result_single)  # Output: "John"
+        print(result_single)  # 输出: "张三"
 
-        # Multiple keys - returns a dictionary
+        # 多个键 - 返回字典
         runnable_multiple = RunnablePick(keys=["name", "age"])
         result_multiple = runnable_multiple.invoke(input_data)
-        print(result_multiple)  # Output: {'name': 'John', 'age': 30}
+        print(result_multiple)  # 输出: {'name': '张三', 'age': 30}
         ```
     """
 
     keys: str | list[str]
+    """要从输入字典中选择的键，可以是单个字符串或字符串列表。"""
 
     def __init__(self, keys: str | list[str], **kwargs: Any) -> None:
         """Create a `RunnablePick`.

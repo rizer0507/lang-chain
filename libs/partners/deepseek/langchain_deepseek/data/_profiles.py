@@ -11,6 +11,16 @@ License: MIT License
 To update these data, refer to the instructions here:
 
 https://docs.langchain.com/oss/python/langchain/models#updating-or-overwriting-profile-data
+
+中文翻译:
+自动生成的模型配置文件。
+请勿手动编辑此文件。
+该文件由 langchain-profiles CLI 工具生成。
+它包含源自 models.dev 项目的数据。
+来源：https://github.com/sst/models.dev
+许可证：麻省理工学院许可证
+要更新这些数据，请参阅此处的说明：
+https://docs.langchain.com/oss/python/langchain/models#updating-or-overwriting-profile-data
 """
 
 from typing import Any

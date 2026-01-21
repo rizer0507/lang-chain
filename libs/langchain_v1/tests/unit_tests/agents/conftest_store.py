@@ -16,9 +16,11 @@ async def _store_memory_aio():
 
 
 # Placeholder functions for other store types that aren't available
+# 中文: 其他商店类型不可用的占位符功能
 @contextmanager
 def _store_postgres():
     # Fallback to memory for now
+    # 中文: 现在回退到内存
     store = InMemoryStore()
     yield store
 
@@ -26,6 +28,7 @@ def _store_postgres():
 @contextmanager
 def _store_postgres_pipe():
     # Fallback to memory for now
+    # 中文: 现在回退到内存
     store = InMemoryStore()
     yield store
 
@@ -33,6 +36,7 @@ def _store_postgres_pipe():
 @contextmanager
 def _store_postgres_pool():
     # Fallback to memory for now
+    # 中文: 现在回退到内存
     store = InMemoryStore()
     yield store
 
@@ -40,6 +44,7 @@ def _store_postgres_pool():
 @asynccontextmanager
 async def _store_postgres_aio():
     # Fallback to memory for now
+    # 中文: 现在回退到内存
     store = InMemoryStore()
     yield store
 
@@ -47,6 +52,7 @@ async def _store_postgres_aio():
 @asynccontextmanager
 async def _store_postgres_aio_pipe():
     # Fallback to memory for now
+    # 中文: 现在回退到内存
     store = InMemoryStore()
     yield store
 
@@ -54,5 +60,6 @@ async def _store_postgres_aio_pipe():
 @asynccontextmanager
 async def _store_postgres_aio_pool():
     # Fallback to memory for now
+    # 中文: 现在回退到内存
     store = InMemoryStore()
     yield store

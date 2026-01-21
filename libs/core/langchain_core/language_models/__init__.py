@@ -27,6 +27,27 @@ Although the underlying models are string in, string out, the LangChain wrappers
 allow these models to take messages as input. This gives them the same interface as
 chat models. When messages are passed in as input, they will be formatted into a string
 under the hood before being passed to the underlying model.
+
+中文翻译:
+核心语言模型抽象。
+LangChain 有两个主要的类来处理语言模型：聊天模型和
+“老式”法学硕士（字符串输入，字符串输出）。
+**聊天模型**
+使用消息序列作为输入并返回聊天消息的语言模型
+作为输出（而不是使用纯文本）。
+聊天模型支持为对话消息分配不同的角色，从而帮助
+区分来自AI、用户的消息和系统消息等指令。
+聊天模型的关键抽象是
+[`BaseChatModel`][langchain_core.language_models.BaseChatModel]。实施应该
+从这个类继承。
+请参阅现有的[聊天模型集成](https://docs.langchain.com/oss/python/integrations/chat)。
+**法学硕士（传统）**
+将字符串作为输入并返回字符串的语言模型。
+这些传统上是较旧的模型（较新的模型通常是聊天模型）。
+虽然底层模型是 string in、string out，但 LangChain 包装器也
+允许这些模型将消息作为输入。这给了他们相同的界面
+聊天模型。当消息作为输入传入时，它们将被格式化为字符串
+在传递到底层模型之前。
 """
 
 from typing import TYPE_CHECKING

@@ -1,4 +1,7 @@
-"""Configuration for unit tests."""
+"""Configuration for unit tests.
+
+中文翻译:
+单元测试的配置。"""
 
 from collections.abc import Sequence
 from importlib import util
@@ -16,7 +19,10 @@ _EXTRA_HEADERS = [
 
 
 def remove_request_headers(request: Any) -> Any:
-    """Remove sensitive headers from the request."""
+    """Remove sensitive headers from the request.
+
+    中文翻译:
+    从请求中删除敏感标头。"""
     for k in request.headers:
         request.headers[k] = "**REDACTED**"
     request.uri = "**REDACTED**"
@@ -24,7 +30,10 @@ def remove_request_headers(request: Any) -> Any:
 
 
 def remove_response_headers(response: dict) -> dict:
-    """Remove sensitive headers from the response."""
+    """Remove sensitive headers from the response.
+
+    中文翻译:
+    从响应中删除敏感标头。"""
     for k in response["headers"]:
         response["headers"][k] = "**REDACTED**"
     return response
@@ -32,7 +41,10 @@ def remove_response_headers(response: dict) -> dict:
 
 @pytest.fixture(scope="session")
 def vcr_config() -> dict:
-    """Extend the default configuration coming from langchain_tests."""
+    """Extend the default configuration coming from langchain_tests.
+
+    中文翻译:
+    扩展来自 langchain_tests 的默认配置。"""
     config = base_vcr_config()
     config.setdefault("filter_headers", []).extend(_EXTRA_HEADERS)
     config["before_record_request"] = remove_request_headers
@@ -48,7 +60,10 @@ def pytest_recording_configure(config: dict, vcr: VCR) -> None:  # noqa: ARG001
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add custom command line options to pytest."""
+    """Add custom command line options to pytest.
+
+    中文翻译:
+    将自定义命令行选项添加到 pytest.txt"""
     parser.addoption(
         "--only-extended",
         action="store_true",
@@ -75,9 +90,22 @@ def pytest_collection_modifyitems(config: pytest.Config, items: Sequence[pytest.
     @pytest.mark.requires("package1", "package2")
     def test_something(): ...
     ```
-    """
+    
+
+    中文翻译:
+    添加处理自定义标记的实现。
+    目前，这增加了对自定义“requires”标记的支持。
+    “requires”标记用于表示需要一个或多个包的测试
+    才能安装运行。如果未安装该包，则跳过测试。
+    `requires` 标记语法是：
+    ````蟒蛇
+    @pytest.mark.requires("package1", "package2")
+    def test_something(): ...
+    ````"""
     # Mapping from the name of a package to whether it is installed or not.
+    # 中文: 从包的名称到它是否已安装的映射。
     # Used to avoid repeated calls to `util.find_spec`
+    # 中文: 用于避免重复调用“util.find_spec”
     required_pkgs_info: dict[str, bool] = {}
 
     only_extended = config.getoption("--only-extended", default=False)
@@ -95,10 +123,13 @@ def pytest_collection_modifyitems(config: pytest.Config, items: Sequence[pytest.
                 continue
 
             # Iterate through the list of required packages
+            # 中文: 遍历所需包的列表
             required_pkgs = requires_marker.args
             for pkg in required_pkgs:
                 # If we haven't yet checked whether the pkg is installed
+                # 中文: 如果我们还没有检查pkg是否安装
                 # let's check it and store the result.
+                # 中文: 让我们检查一下并存储结果。
                 if pkg not in required_pkgs_info:
                     try:
                         installed = util.find_spec(pkg) is not None
@@ -116,7 +147,9 @@ def pytest_collection_modifyitems(config: pytest.Config, items: Sequence[pytest.
 
                     else:
                         # If the package is not installed, we immediately break
+                        # 中文: 如果包没有安装，我们立即破解
                         # and mark the test as skipped.
+                        # 中文: 并将测试标记为已跳过。
                         item.add_marker(
                             pytest.mark.skip(reason=f"Requires pkg: `{pkg}`"),
                         )

@@ -1,4 +1,7 @@
-"""**Tracers** are classes for tracing runs."""
+"""**Tracers** are classes for tracing runs.
+
+中文翻译:
+**跟踪器**是用于跟踪运行的类。"""
 
 from typing import TYPE_CHECKING
 

@@ -1,4 +1,144 @@
-"""Base classes and utilities for `Runnable`s."""
+"""Runnable 基类和工具模块。
+
+本模块是 LangChain 表达式语言 (LCEL) 的核心，定义了所有可组合组件的基础接口。
+
+===============================================================================
+                            LCEL 核心概念
+===============================================================================
+
+什么是 Runnable?
+-----------------
+`Runnable` 是 LangChain 中所有可执行组件的基类抽象。它定义了一个统一的接口，
+任何组件只要实现这个接口，就可以：
+
+1. **调用** (invoke/ainvoke): 将单个输入转换为输出
+2. **批量处理** (batch/abatch): 高效处理多个输入
+3. **流式输出** (stream/astream): 实时输出结果
+4. **转换** (transform/atransform): 流到流的转换
+5. **组合** (|, pipe, RunnableSequence): 与其他 Runnable 串联
+6. **并行** (RunnableParallel): 与其他 Runnable 并行执行
+
+为什么使用 LCEL?
+-----------------
+1. **统一接口**: 所有组件共享相同的调用方式
+2. **自动并行**: batch 自动使用线程池并行处理
+3. **原生异步**: 所有方法都有对应的异步版本
+4. **流式优先**: 内置流式支持，提升用户体验
+5. **可观察性**: 自动集成追踪和回调系统
+
+核心类层次:
+-----------
+```
+Runnable[Input, Output]          # 抽象基类
+├── RunnableSerializable         # 可序列化的 Runnable
+│   ├── RunnableSequence        # 串联组合 (A | B | C)
+│   ├── RunnableParallel        # 并行组合 ({a: A, b: B})
+│   ├── RunnableLambda          # 包装普通函数
+│   ├── RunnableGenerator       # 包装生成器
+│   └── RunnableBinding         # 绑定参数/配置
+│       ├── RunnableBindingBase # 绑定基类
+│       └── RunnableEach        # 映射执行 (.map())
+└── [其他模块中的 Runnable]
+    ├── ChatPromptTemplate      # prompts
+    ├── ChatOpenAI              # chat_models
+    ├── StrOutputParser         # output_parsers
+    └── ...
+```
+
+===============================================================================
+                            基本使用示例
+===============================================================================
+
+1. 使用 | 运算符组合 Runnable:
+------------------------------
+>>> from langchain_core.runnables import RunnableLambda
+>>>
+>>> add_one = RunnableLambda(lambda x: x + 1)
+>>> mul_two = RunnableLambda(lambda x: x * 2)
+>>>
+>>> # 串联: 先加1，再乘2
+>>> chain = add_one | mul_two
+>>> chain.invoke(5)  # (5 + 1) * 2 = 12
+12
+
+2. 并行执行:
+------------
+>>> chain = add_one | {
+...     "doubled": mul_two,
+...     "tripled": RunnableLambda(lambda x: x * 3),
+... }
+>>> chain.invoke(5)
+{'doubled': 12, 'tripled': 18}
+
+3. 实际 LLM 链示例:
+-------------------
+>>> from langchain_openai import ChatOpenAI
+>>> from langchain_core.prompts import ChatPromptTemplate
+>>> from langchain_core.output_parsers import StrOutputParser
+>>>
+>>> prompt = ChatPromptTemplate.from_template("讲一个关于{topic}的笑话")
+>>> model = ChatOpenAI()
+>>> parser = StrOutputParser()
+>>>
+>>> chain = prompt | model | parser
+>>>
+>>> # 同步调用
+>>> chain.invoke({"topic": "程序员"})
+>>>
+>>> # 异步调用
+>>> await chain.ainvoke({"topic": "程序员"})
+>>>
+>>> # 批量处理
+>>> chain.batch([{"topic": "程序员"}, {"topic": "产品经理"}])
+>>>
+>>> # 流式输出
+>>> for chunk in chain.stream({"topic": "程序员"}):
+...     print(chunk, end="", flush=True)
+
+4. 常用修饰方法:
+----------------
+>>> # 绑定参数
+>>> model.bind(temperature=0.5)
+>>>
+>>> # 添加重试
+>>> model.with_retry(stop_after_attempt=3)
+>>>
+>>> # 添加回退
+>>> model.with_fallbacks([backup_model])
+>>>
+>>> # 绑定配置
+>>> model.with_config(tags=["production"])
+
+===============================================================================
+                            调试和追踪
+===============================================================================
+
+启用调试模式:
+>>> from langchain_core.globals import set_debug
+>>> set_debug(True)
+
+使用回调追踪:
+>>> from langchain_core.tracers import ConsoleCallbackHandler
+>>> chain.invoke(..., config={"callbacks": [ConsoleCallbackHandler()]})
+
+使用 LangSmith 追踪:
+访问 https://docs.langchain.com/langsmith
+
+===============================================================================
+                            本模块核心类
+===============================================================================
+
+- **Runnable**: LCEL 的核心抽象基类
+- **RunnableSerializable**: 可序列化的 Runnable
+- **RunnableSequence**: 串联多个 Runnable (通过 | 运算符创建)
+- **RunnableParallel**: 并行执行多个 Runnable (通过 {} 创建)
+- **RunnableLambda**: 将普通函数包装为 Runnable
+- **RunnableGenerator**: 将生成器函数包装为 Runnable
+- **RunnableBinding**: 绑定参数或配置到 Runnable
+- **RunnableEach**: 对列表中每个元素执行 Runnable
+
+===============================================================================
+"""
 
 from __future__ import annotations
 
@@ -122,141 +262,112 @@ _RUNNABLE_GENERIC_NUM_ARGS = 2  # Input and Output
 
 
 class Runnable(ABC, Generic[Input, Output]):
-    """A unit of work that can be invoked, batched, streamed, transformed and composed.
+    """可调用、可批处理、可流式、可转换和可组合的工作单元。
 
-    Key Methods
-    ===========
+    这是 LangChain 表达式语言 (LCEL) 的核心抽象基类。
 
-    - `invoke`/`ainvoke`: Transforms a single input into an output.
-    - `batch`/`abatch`: Efficiently transforms multiple inputs into outputs.
-    - `stream`/`astream`: Streams output from a single input as it's produced.
-    - `astream_log`: Streams output and selected intermediate results from an
-        input.
+    核心方法
+    ========
 
-    Built-in optimizations:
+    - `invoke`/`ainvoke`: 将单个输入转换为输出
+    - `batch`/`abatch`: 高效地将多个输入转换为输出
+    - `stream`/`astream`: 从单个输入流式产生输出
+    - `astream_log`: 流式输出和从输入选择的中间结果
+    - `astream_events`: 流式事件（v2 推荐）
 
-    - **Batch**: By default, batch runs invoke() in parallel using a thread pool
-        executor. Override to optimize batching.
+    内置优化:
 
-    - **Async**: Methods with `'a'` suffix are asynchronous. By default, they execute
-        the sync counterpart using asyncio's thread pool.
-        Override for native async.
+    - **批处理**: 默认情况下，batch 使用线程池并行执行 invoke()。
+      子类可以重写以优化批处理。
 
-    All methods accept an optional config argument, which can be used to configure
-    execution, add tags and metadata for tracing and debugging etc.
+    - **异步**: 带 'a' 后缀的方法是异步的。默认情况下，
+      它们使用 asyncio 的线程池执行同步版本。
+      重写以实现原生异步。
 
-    Runnables expose schematic information about their input, output and config via
-    the `input_schema` property, the `output_schema` property and `config_schema`
-    method.
+    所有方法接受可选的 config 参数，可用于配置执行、
+    添加用于追踪和调试的标签和元数据等。
 
-    Composition
-    ===========
+    Runnable 通过 `input_schema`、`output_schema` 属性和 `config_schema` 方法
+    暴露关于其输入、输出和配置的模式信息。
 
-    Runnable objects can be composed together to create chains in a declarative way.
+    组合
+    ====
 
-    Any chain constructed this way will automatically have sync, async, batch, and
-    streaming support.
+    Runnable 对象可以声明式地组合成链。
 
-    The main composition primitives are `RunnableSequence` and `RunnableParallel`.
+    以这种方式构建的任何链都自动支持同步、异步、批处理和流式操作。
 
-    **`RunnableSequence`** invokes a series of runnables sequentially, with
-    one Runnable's output serving as the next's input. Construct using
-    the `|` operator or by passing a list of runnables to `RunnableSequence`.
+    主要的组合原语是 `RunnableSequence` 和 `RunnableParallel`:
 
-    **`RunnableParallel`** invokes runnables concurrently, providing the same input
-    to each. Construct it using a dict literal within a sequence or by passing a
-    dict to `RunnableParallel`.
+    **`RunnableSequence`** 顺序调用一系列 Runnable，
+    一个 Runnable 的输出作为下一个的输入。
+    使用 `|` 运算符或将 Runnable 列表传递给 RunnableSequence 来构造。
 
+    **`RunnableParallel`** 并发调用 Runnable，为每个 Runnable 提供相同的输入。
+    在序列中使用字典字面量或将字典传递给 RunnableParallel 来构造。
 
-    For example,
+    使用示例:
 
-    ```python
-    from langchain_core.runnables import RunnableLambda
+        ```python
+        from langchain_core.runnables import RunnableLambda
 
-    # A RunnableSequence constructed using the `|` operator
-    sequence = RunnableLambda(lambda x: x + 1) | RunnableLambda(lambda x: x * 2)
-    sequence.invoke(1)  # 4
-    sequence.batch([1, 2, 3])  # [4, 6, 8]
+        # 使用 | 运算符构造 RunnableSequence
+        sequence = RunnableLambda(lambda x: x + 1) | RunnableLambda(lambda x: x * 2)
+        sequence.invoke(1)  # 4
+        sequence.batch([1, 2, 3])  # [4, 6, 8]
 
+        # 包含使用字典字面量构造的 RunnableParallel 的序列
+        sequence = RunnableLambda(lambda x: x + 1) | {
+            "mul_2": RunnableLambda(lambda x: x * 2),
+            "mul_5": RunnableLambda(lambda x: x * 5),
+        }
+        sequence.invoke(1)  # {'mul_2': 4, 'mul_5': 10}
+        ```
 
-    # A sequence that contains a RunnableParallel constructed using a dict literal
-    sequence = RunnableLambda(lambda x: x + 1) | {
-        "mul_2": RunnableLambda(lambda x: x * 2),
-        "mul_5": RunnableLambda(lambda x: x * 5),
-    }
-    sequence.invoke(1)  # {'mul_2': 4, 'mul_5': 10}
-    ```
+    标准方法
+    ========
 
-    Standard Methods
-    ================
+    所有 Runnable 都暴露额外的方法，可用于修改其行为
+    （例如，添加重试策略、添加生命周期监听器、使其可配置等）。
 
-    All `Runnable`s expose additional methods that can be used to modify their
-    behavior (e.g., add a retry policy, add lifecycle listeners, make them
-    configurable, etc.).
+    这些方法适用于任何 Runnable，包括由其他 Runnable 组合而成的链。
+    详见各方法的文档。
 
-    These methods will work on any `Runnable`, including `Runnable` chains
-    constructed by composing other `Runnable`s.
-    See the individual methods for details.
+    重要方法:
 
-    For example,
+    - `bind(**kwargs)`: 绑定参数
+    - `with_config(config)`: 绑定配置
+    - `with_retry(...)`: 添加重试逻辑
+    - `with_fallbacks(fallbacks)`: 添加回退
+    - `with_listeners(...)`: 添加生命周期监听器
+    - `map()`: 返回处理列表的 Runnable
+    - `pick(keys)`: 从输出字典中选择键
+    - `assign(**kwargs)`: 向输出字典添加新键
 
-    ```python
-    from langchain_core.runnables import RunnableLambda
+    调试和追踪
+    ==========
 
-    import random
+    当链变长时，能够查看中间结果来调试和追踪链是很有用的。
 
-    def add_one(x: int) -> int:
-        return x + 1
+    可以将全局调试标志设置为 True 以启用所有链的调试输出：
 
+        ```python
+        from langchain_core.globals import set_debug
+        set_debug(True)
+        ```
 
-    def buggy_double(y: int) -> int:
-        \"\"\"Buggy code that will fail 70% of the time\"\"\"
-        if random.random() > 0.3:
-            print('This code failed, and will probably be retried!')  # noqa: T201
-            raise ValueError('Triggered buggy code')
-        return y * 2
+    或者，可以将现有或自定义回调传递给任何链：
 
-    sequence = (
-        RunnableLambda(add_one) |
-        RunnableLambda(buggy_double).with_retry( # Retry on failure
-            stop_after_attempt=10,
-            wait_exponential_jitter=False
-        )
-    )
+        ```python
+        from langchain_core.tracers import ConsoleCallbackHandler
+        chain.invoke(..., config={"callbacks": [ConsoleCallbackHandler()]})
+        ```
 
-    print(sequence.input_schema.model_json_schema()) # Show inferred input schema
-    print(sequence.output_schema.model_json_schema()) # Show inferred output schema
-    print(sequence.invoke(2)) # invoke the sequence (note the retry above!!)
-    ```
-
-    Debugging and tracing
-    =====================
-
-    As the chains get longer, it can be useful to be able to see intermediate results
-    to debug and trace the chain.
-
-    You can set the global debug flag to True to enable debug output for all chains:
-
-    ```python
-    from langchain_core.globals import set_debug
-
-    set_debug(True)
-    ```
-
-    Alternatively, you can pass existing or custom callbacks to any given chain:
-
-    ```python
-    from langchain_core.tracers import ConsoleCallbackHandler
-
-    chain.invoke(..., config={"callbacks": [ConsoleCallbackHandler()]})
-    ```
-
-    For a UI (and much more) checkout [LangSmith](https://docs.langchain.com/langsmith/home).
-
+    对于 UI（以及更多功能），请查看 LangSmith: https://docs.langchain.com/langsmith
     """
 
     name: str | None
-    """The name of the `Runnable`. Used for debugging and tracing."""
+    """Runnable 的名称。用于调试和追踪。"""
 
     def get_name(self, suffix: str | None = None, *, name: str | None = None) -> str:
         """Get the name of the `Runnable`.
@@ -2582,7 +2693,37 @@ class Runnable(ABC, Generic[Input, Output]):
 
 
 class RunnableSerializable(Serializable, Runnable[Input, Output]):
-    """Runnable that can be serialized to JSON."""
+    """可序列化为 JSON 的 Runnable。
+
+    这是大多数具体 Runnable 实现的基类。
+    它继承自 Serializable（提供 JSON 序列化）和 Runnable（提供执行接口）。
+
+    此类添加了两个重要的可配置方法:
+
+    - `configurable_fields()`: 允许在运行时配置特定字段
+    - `configurable_alternatives()`: 允许在运行时切换不同的实现
+
+    使用示例:
+        ```python
+        from langchain_core.runnables import ConfigurableField
+        from langchain_openai import ChatOpenAI
+
+        # 使字段可配置
+        model = ChatOpenAI(max_tokens=20).configurable_fields(
+            max_tokens=ConfigurableField(
+                id="output_token_number",
+                name="输出令牌数",
+                description="输出的最大令牌数",
+            )
+        )
+
+        # 使用默认值
+        model.invoke("讲个笑话")
+
+        # 使用配置的值
+        model.with_config(configurable={"output_token_number": 200}).invoke("讲个笑话")
+        ```
+    """
 
     name: str | None = None
 
@@ -2809,98 +2950,85 @@ _RUNNABLE_SEQUENCE_MIN_STEPS = 2
 
 
 class RunnableSequence(RunnableSerializable[Input, Output]):
-    """Sequence of `Runnable` objects, where the output of one is the input of the next.
+    """顺序执行的 Runnable 序列，前一个的输出是后一个的输入。
 
-    **`RunnableSequence`** is the most important composition operator in LangChain
-    as it is used in virtually every chain.
+    **`RunnableSequence`** 是 LangChain 中最重要的组合运算符，
+    几乎在每个链中都会使用。
 
-    A `RunnableSequence` can be instantiated directly or more commonly by using the
-    `|` operator where either the left or right operands (or both) must be a
-    `Runnable`.
+    创建方式:
+    ---------
+    1. 使用 `|` 运算符（推荐）
+    2. 直接实例化 RunnableSequence
 
-    Any `RunnableSequence` automatically supports sync, async, batch.
+    特性:
+    -----
+    - 任何 RunnableSequence 自动支持同步、异步和批处理
+    - 批处理使用线程池/asyncio.gather 并行执行，对 IO 密集型操作更高效
+    - 批处理通过按顺序在每个组件上调用 batch 方法实现
+    - 保留组件的流式特性
 
-    The default implementations of `batch` and `abatch` utilize threadpools and
-    asyncio gather and will be faster than naive invocation of `invoke` or `ainvoke`
-    for IO bound `Runnable`s.
+    流式处理说明:
+    -------------
+    如果序列中的所有组件都实现了 `transform` 方法（将流式输入映射到流式输出），
+    则序列将能够流式处理输入到输出。
 
-    Batching is implemented by invoking the batch method on each component of the
-    `RunnableSequence` in order.
+    如果序列中的任何组件不实现 transform，流式处理将只在该组件运行后开始。
+    如果有多个阻塞组件，流式处理在最后一个之后开始。
 
-    A `RunnableSequence` preserves the streaming properties of its components, so if
-    all components of the sequence implement a `transform` method -- which
-    is the method that implements the logic to map a streaming input to a streaming
-    output -- then the sequence will be able to stream input to output!
+    注意: RunnableLambda 默认不支持 transform！
+    如果需要任意逻辑且需要流式处理，可以继承 Runnable 并实现 transform。
 
-    If any component of the sequence does not implement transform then the
-    streaming will only begin after this component is run. If there are
-    multiple blocking components, streaming begins after the last one.
-
-    !!! note
-        `RunnableLambdas` do not support `transform` by default! So if you need to
-        use a `RunnableLambdas` be careful about where you place them in a
-        `RunnableSequence` (if you need to use the `stream`/`astream` methods).
-
-        If you need arbitrary logic and need streaming, you can subclass
-        Runnable, and implement `transform` for whatever logic you need.
-
-    Here is a simple example that uses simple functions to illustrate the use of
-    `RunnableSequence`:
-
+    使用示例:
         ```python
         from langchain_core.runnables import RunnableLambda
-
 
         def add_one(x: int) -> int:
             return x + 1
 
-
         def mul_two(x: int) -> int:
             return x * 2
 
-
         runnable_1 = RunnableLambda(add_one)
         runnable_2 = RunnableLambda(mul_two)
-        sequence = runnable_1 | runnable_2
-        # Or equivalently:
-        # sequence = RunnableSequence(first=runnable_1, last=runnable_2)
-        sequence.invoke(1)
-        await sequence.ainvoke(1)
 
-        sequence.batch([1, 2, 3])
-        await sequence.abatch([1, 2, 3])
+        # 使用 | 运算符
+        sequence = runnable_1 | runnable_2
+
+        # 或直接构造
+        # sequence = RunnableSequence(runnable_1, runnable_2)
+
+        sequence.invoke(1)  # (1 + 1) * 2 = 4
+        await sequence.ainvoke(1)  # 4
+
+        sequence.batch([1, 2, 3])  # [4, 6, 8]
+        await sequence.abatch([1, 2, 3])  # [4, 6, 8]
         ```
 
-    Here's an example that uses streams JSON output generated by an LLM:
-
+    流式 JSON 示例:
         ```python
         from langchain_core.output_parsers.json import SimpleJsonOutputParser
         from langchain_openai import ChatOpenAI
 
         prompt = PromptTemplate.from_template(
-            "In JSON format, give me a list of {topic} and their "
-            "corresponding names in French, Spanish and in a "
-            "Cat Language."
+            "以 JSON 格式，给我一个 {topic} 列表..."
         )
 
         model = ChatOpenAI()
         chain = prompt | model | SimpleJsonOutputParser()
 
-        async for chunk in chain.astream({"topic": "colors"}):
-            print("-")  # noqa: T201
-            print(chunk, sep="", flush=True)  # noqa: T201
+        async for chunk in chain.astream({"topic": "颜色"}):
+            print(chunk)
         ```
     """
 
-    # The steps are broken into first, middle and last, solely for type checking
-    # purposes. It allows specifying the `Input` on the first type, the `Output` of
-    # the last type.
+    # 步骤分为 first、middle 和 last，仅用于类型检查目的
+    # 这允许在第一个类型上指定 Input，在最后一个类型上指定 Output
     first: Runnable[Input, Any]
-    """The first `Runnable` in the sequence."""
+    """序列中的第一个 Runnable。"""
     middle: list[Runnable[Any, Any]] = Field(default_factory=list)
-    """The middle `Runnable` in the sequence."""
+    """序列中的中间 Runnable。"""
     last: Runnable[Any, Output]
-    """The last `Runnable` in the sequence."""
+    """序列中的最后一个 Runnable。"""
 
     def __init__(
         self,

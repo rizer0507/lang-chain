@@ -1,4 +1,7 @@
-"""Base interfaces for tracing runs."""
+"""Base interfaces for tracing runs.
+
+中文翻译:
+用于跟踪运行的基本接口。"""
 
 from __future__ import annotations
 
@@ -31,19 +34,31 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
-    """Base interface for tracers."""
+    """Base interface for tracers.
+
+    中文翻译:
+    跟踪器的基本接口。"""
 
     @abstractmethod
     def _persist_run(self, run: Run) -> None:
-        """Persist a run."""
+        """Persist a run.
+
+        中文翻译:
+        坚持跑步。"""
 
     def _start_trace(self, run: Run) -> None:
-        """Start a trace for a run."""
+        """Start a trace for a run.
+
+        中文翻译:
+        开始追踪跑步。"""
         super()._start_trace(run)
         self._on_run_create(run)
 
     def _end_trace(self, run: Run) -> None:
-        """End a trace for a run."""
+        """End a trace for a run.
+
+        中文翻译:
+        结束跑步追踪。"""
         if not run.parent_run_id:
             self._persist_run(run)
         self.run_map.pop(str(run.id))
@@ -75,7 +90,21 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        启动 LLM 运行的跟踪。
+        参数：
+            序列化：序列化模型。
+            messages：开始聊天的消息。
+            run_id：运行 ID。
+            标签：运行的标签。
+            Parent_run_id：父运行 ID。
+            元数据：运行的元数据。
+            名称：运行的名称。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         chat_model_run = self._create_chat_model_run(
             serialized=serialized,
             messages=messages,
@@ -116,7 +145,21 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        启动 LLM 运行的跟踪。
+        参数：
+            序列化：序列化模型。
+            提示：启动 LLM 的提示。
+            run_id：运行 ID。
+            标签：运行的标签。
+            Parent_run_id：父运行 ID。
+            元数据：运行的元数据。
+            名称：运行的名称。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         llm_run = self._create_llm_run(
             serialized=serialized,
             prompts=prompts,
@@ -152,9 +195,22 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        在新的 LLM 代币上运行。仅在启用流式传输时可用。
+        参数：
+            令牌：令牌。
+            块：块。
+            run_id：运行 ID。
+            Parent_run_id：父运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         # "chat_model" is only used for the experimental new streaming_events format.
+        # 中文: “chat_model”仅用于实验性的新的streaming_events格式。
         # This change should not affect any existing tracers.
+        # 中文: 此更改不应影响任何现有的跟踪器。
         llm_run = self._llm_run_with_token_event(
             token=token,
             run_id=run_id,
@@ -181,7 +237,16 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        重试时运行。
+        参数：
+            retry_state：重试状态。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         return self._llm_run_with_retry_event(
             retry_state=retry_state,
             run_id=run_id,
@@ -198,9 +263,20 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        结束 LLM 运行的跟踪。
+        参数：
+            回应：回应。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         # "chat_model" is only used for the experimental new streaming_events format.
+        # 中文: “chat_model”仅用于实验性的新的streaming_events格式。
         # This change should not affect any existing tracers.
+        # 中文: 此更改不应影响任何现有的跟踪器。
         llm_run = self._complete_llm_run(
             response=response,
             run_id=run_id,
@@ -225,9 +301,20 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        处理 LLM 运行的错误。
+        参数：
+            错误：错误。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         # "chat_model" is only used for the experimental new streaming_events format.
+        # 中文: “chat_model”仅用于实验性的新的streaming_events格式。
         # This change should not affect any existing tracers.
+        # 中文: 此更改不应影响任何现有的跟踪器。
         llm_run = self._errored_llm_run(
             error=error, run_id=run_id, response=kwargs.pop("response", None)
         )
@@ -264,7 +351,22 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        开始跟踪链运行。
+        参数：
+            序列化：序列化链。
+            输入：链的输入。
+            run_id：运行 ID。
+            标签：运行的标签。
+            Parent_run_id：父运行 ID。
+            元数据：运行的元数据。
+            run_type：运行的类型。
+            名称：运行的名称。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         chain_run = self._create_chain_run(
             serialized=serialized,
             inputs=inputs,
@@ -299,7 +401,17 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        结束连锁运行的跟踪。
+        参数：
+            输出：链的输出。
+            run_id：运行 ID。
+            输入：链的输入。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         chain_run = self._complete_chain_run(
             outputs=outputs,
             run_id=run_id,
@@ -328,7 +440,17 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        处理链运行的错误。
+        参数：
+            错误：错误。
+            输入：链的输入。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         chain_run = self._errored_chain_run(
             error=error,
             run_id=run_id,
@@ -366,7 +488,22 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        启动工具运行的跟踪。
+        参数：
+            序列化：序列化工具。
+            input_str：输入字符串。
+            run_id：运行 ID。
+            标签：运行的标签。
+            Parent_run_id：父运行 ID。
+            元数据：运行的元数据。
+            名称：运行的名称。
+            输入：工具的输入。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         tool_run = self._create_tool_run(
             serialized=serialized,
             input_str=input_str,
@@ -393,7 +530,16 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        结束工具运行的跟踪。
+        参数：
+            输出：工具的输出。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         tool_run = self._complete_tool_run(
             output=output,
             run_id=run_id,
@@ -419,7 +565,16 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        处理工具运行的错误。
+        参数：
+            错误：错误。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         tool_run = self._errored_tool_run(
             error=error,
             run_id=run_id,
@@ -454,7 +609,21 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        当检索器开始运行时运行。
+        参数：
+            序列化：序列化的检索器。
+            查询：查询。
+            run_id：运行 ID。
+            Parent_run_id：父运行 ID。
+            标签：运行的标签。
+            元数据：运行的元数据。
+            名称：运行的名称。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         retrieval_run = self._create_retrieval_run(
             serialized=serialized,
             query=query,
@@ -486,7 +655,16 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        当检索器出错时运行。
+        参数：
+            错误：错误。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         retrieval_run = self._errored_retrieval_run(
             error=error,
             run_id=run_id,
@@ -508,7 +686,16 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
 
         Returns:
             The run.
-        """
+        
+
+        中文翻译:
+        当猎犬结束运行时运行。
+        参数：
+            文件：文件。
+            run_id：运行 ID。
+            **kwargs：附加参数。
+        返回：
+            奔跑。"""
         retrieval_run = self._complete_retrieval_run(
             documents=documents,
             run_id=run_id,
@@ -518,21 +705,33 @@ class BaseTracer(_TracerCore, BaseCallbackHandler, ABC):
         return retrieval_run
 
     def __deepcopy__(self, memo: dict) -> BaseTracer:
-        """Return self."""
+        """Return self.
+
+        中文翻译:
+        回归自我。"""
         return self
 
     def __copy__(self) -> BaseTracer:
-        """Return self."""
+        """Return self.
+
+        中文翻译:
+        回归自我。"""
         return self
 
 
 class AsyncBaseTracer(_TracerCore, AsyncCallbackHandler, ABC):
-    """Async Base interface for tracers."""
+    """Async Base interface for tracers.
+
+    中文翻译:
+    跟踪器的异步基本接口。"""
 
     @abstractmethod
     @override
     async def _persist_run(self, run: Run) -> None:
-        """Persist a run."""
+        """Persist a run.
+
+        中文翻译:
+        坚持跑步。"""
 
     @override
     async def _start_trace(self, run: Run) -> None:
@@ -540,7 +739,12 @@ class AsyncBaseTracer(_TracerCore, AsyncCallbackHandler, ABC):
 
         Starting a trace will run concurrently with each _on_[run_type]_start method.
         No _on_[run_type]_start callback should depend on operations in _start_trace.
-        """
+        
+
+        中文翻译:
+        开始追踪跑步。
+        启动跟踪将与每个 _on_[run_type]_start 方法同时运行。
+        _on_[run_type]_start 回调不应依赖于 _start_trace 中的操作。"""
         super()._start_trace(run)
         await self._on_run_create(run)
 
@@ -550,7 +754,12 @@ class AsyncBaseTracer(_TracerCore, AsyncCallbackHandler, ABC):
 
         Ending a trace will run concurrently with each _on_[run_type]_end method.
         No _on_[run_type]_end callback should depend on operations in _end_trace.
-        """
+        
+
+        中文翻译:
+        结束跑步追踪。
+        结束跟踪将与每个 _on_[run_type]_end 方法同时运行。
+        _on_[run_type]_end 回调不应依赖于 _end_trace 中的操作。"""
         if not run.parent_run_id:
             await self._persist_run(run)
         self.run_map.pop(str(run.id))
@@ -862,19 +1071,34 @@ class AsyncBaseTracer(_TracerCore, AsyncCallbackHandler, ABC):
         await asyncio.gather(*tasks)
 
     async def _on_run_create(self, run: Run) -> None:
-        """Process a run upon creation."""
+        """Process a run upon creation.
+
+        中文翻译:
+        创建时处理运行。"""
 
     async def _on_run_update(self, run: Run) -> None:
-        """Process a run upon update."""
+        """Process a run upon update.
+
+        中文翻译:
+        更新时处理运行。"""
 
     async def _on_llm_start(self, run: Run) -> None:
-        """Process the LLM Run upon start."""
+        """Process the LLM Run upon start.
+
+        中文翻译:
+        启动时处理 LLM 运行。"""
 
     async def _on_llm_end(self, run: Run) -> None:
-        """Process the LLM Run."""
+        """Process the LLM Run.
+
+        中文翻译:
+        处理 LLM 运行。"""
 
     async def _on_llm_error(self, run: Run) -> None:
-        """Process the LLM Run upon error."""
+        """Process the LLM Run upon error.
+
+        中文翻译:
+        出现错误时处理 LLM 运行。"""
 
     async def _on_llm_new_token(
         self,
@@ -882,34 +1106,67 @@ class AsyncBaseTracer(_TracerCore, AsyncCallbackHandler, ABC):
         token: str,
         chunk: GenerationChunk | ChatGenerationChunk | None,
     ) -> None:
-        """Process new LLM token."""
+        """Process new LLM token.
+
+        中文翻译:
+        处理新的 LLM 令牌。"""
 
     async def _on_chain_start(self, run: Run) -> None:
-        """Process the Chain Run upon start."""
+        """Process the Chain Run upon start.
+
+        中文翻译:
+        启动时处理 Chain Run。"""
 
     async def _on_chain_end(self, run: Run) -> None:
-        """Process the Chain Run."""
+        """Process the Chain Run.
+
+        中文翻译:
+        处理链运行。"""
 
     async def _on_chain_error(self, run: Run) -> None:
-        """Process the Chain Run upon error."""
+        """Process the Chain Run upon error.
+
+        中文翻译:
+        处理出错时的 Chain Run。"""
 
     async def _on_tool_start(self, run: Run) -> None:
-        """Process the Tool Run upon start."""
+        """Process the Tool Run upon start.
+
+        中文翻译:
+        启动时处理工具运行。"""
 
     async def _on_tool_end(self, run: Run) -> None:
-        """Process the Tool Run."""
+        """Process the Tool Run.
+
+        中文翻译:
+        处理工具运行。"""
 
     async def _on_tool_error(self, run: Run) -> None:
-        """Process the Tool Run upon error."""
+        """Process the Tool Run upon error.
+
+        中文翻译:
+        处理出现错误时的工具运行。"""
 
     async def _on_chat_model_start(self, run: Run) -> None:
-        """Process the Chat Model Run upon start."""
+        """Process the Chat Model Run upon start.
+
+        中文翻译:
+        启动时处理聊天模型运行。"""
 
     async def _on_retriever_start(self, run: Run) -> None:
-        """Process the Retriever Run upon start."""
+        """Process the Retriever Run upon start.
+
+        中文翻译:
+        启动时处理 Retriever Run。"""
 
     async def _on_retriever_end(self, run: Run) -> None:
-        """Process the Retriever Run."""
+        """Process the Retriever Run.
+
+        中文翻译:
+        处理检索器运行。"""
 
     async def _on_retriever_error(self, run: Run) -> None:
-        """Process the Retriever Run upon error."""
+        """Process the Retriever Run upon error.
+
+        中文翻译:
+        处理错误时的检索器运行。"""

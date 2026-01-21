@@ -1,4 +1,31 @@
-"""Mermaid graph drawing utilities."""
+"""Mermaid 图形绘制模块。
+
+本模块提供将 Runnable 链绘制为 Mermaid 图表的功能。
+
+核心功能:
+---------
+- `draw_mermaid()`: 生成 Mermaid 语法字符串
+- `draw_mermaid_png()`: 生成 PNG 图像（通过 API 或 Pyppeteer）
+
+渲染方法:
+---------
+1. API 方法: 使用 mermaid.ink 在线服务（需要 requests）
+2. Pyppeteer 方法: 本地渲染（需要 pyppeteer）
+
+使用示例:
+---------
+>>> from langchain_core.prompts import ChatPromptTemplate
+>>> from langchain_openai import ChatOpenAI
+>>>
+>>> chain = ChatPromptTemplate.from_template("...") | ChatOpenAI()
+>>> graph = chain.get_graph()
+>>>
+>>> # 生成 Mermaid 语法
+>>> mermaid_code = graph.draw_mermaid()
+>>>
+>>> # 保存为 PNG
+>>> graph.draw_mermaid_png(output_file_path="chain.png")
+"""
 
 from __future__ import annotations
 

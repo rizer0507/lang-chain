@@ -1,4 +1,7 @@
-"""In memory document index."""
+"""In memory document index.
+
+中文翻译:
+内存中的文档索引。"""
 
 import operator
 import uuid
@@ -23,7 +26,13 @@ class InMemoryDocumentIndex(DocumentIndex):
 
     It provides a simple search API that returns documents by the number of
     counts the given query appears in the document.
-    """
+    
+
+    中文翻译:
+    内存中的文档索引。
+    这是一个内存中文档索引，将文档存储在字典中。
+    它提供了一个简单的搜索 API，可以按数量返回文档
+    统计文档中出现的给定查询。"""
 
     store: dict[str, Document] = Field(default_factory=dict)
     top_k: int = 4
@@ -40,7 +49,17 @@ class InMemoryDocumentIndex(DocumentIndex):
             A response object that contains the list of IDs that were
             successfully added or updated in the index and the list of IDs that
             failed to be added or updated.
-        """
+        
+
+        中文翻译:
+        将文档更新到索引中。
+        参数：
+            items：要添加到索引的文档序列。
+            **kwargs：附加关键字参数。
+        返回：
+            包含已发送的 ID 列表的响应对象
+            在索引和 ID 列表中成功添加或更新
+            添加或更新失败。"""
         ok_ids = []
 
         for item in items:
@@ -70,7 +89,17 @@ class InMemoryDocumentIndex(DocumentIndex):
         Returns:
             A response object that contains the list of IDs that were successfully
             deleted and the list of IDs that failed to be deleted.
-        """
+        
+
+        中文翻译:
+        按ID删除。
+        参数：
+            ids：要删除的 ID 列表。
+        加薪：
+            ValueError：如果 ID 为 None。
+        返回：
+            包含成功的 ID 列表的响应对象
+            已删除以及删除失败的ID列表。"""
         if ids is None:
             msg = "IDs must be provided for deletion"
             raise ValueError(msg)

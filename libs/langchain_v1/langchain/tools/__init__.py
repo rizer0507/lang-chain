@@ -1,4 +1,7 @@
-"""Tools."""
+"""Tools.
+
+中文翻译:
+工具。"""
 
 from langchain_core.tools import (
     BaseTool,

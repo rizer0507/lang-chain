@@ -1,4 +1,7 @@
-"""Function Message."""
+"""Function Message.
+
+中文翻译:
+功能消息。"""
 
 from typing import Any, Literal
 
@@ -22,23 +25,46 @@ class FunctionMessage(BaseMessage):
     tool call response. Useful in situations where a chat model is able
     to request multiple tool calls in parallel.
 
-    """
+    
+
+    中文翻译:
+    用于将执行工具的结果传递回模型的消息。
+    `FunctionMessage` 是 `ToolMessage` 模式的旧版本，并且
+    不包含“tool_call_id”字段。
+    `tool_call_id`字段用于将工具调用请求与
+    工具调用响应。在聊天模型能够的情况下很有用
+    请求并行调用多个工具。"""
 
     name: str
-    """The name of the function that was executed."""
+    """The name of the function that was executed.
+
+    中文翻译:
+    被执行的函数的名称。"""
 
     type: Literal["function"] = "function"
-    """The type of the message (used for serialization)."""
+    """The type of the message (used for serialization).
+
+    中文翻译:
+    消息的类型（用于序列化）。"""
 
 
 class FunctionMessageChunk(FunctionMessage, BaseMessageChunk):
-    """Function Message chunk."""
+    """Function Message chunk.
+
+    中文翻译:
+    功能消息块。"""
 
     # Ignoring mypy re-assignment here since we're overriding the value
+    # 中文: 此处忽略 mypy 重新分配，因为我们要覆盖该值
     # to make sure that the chunk variant can be discriminated from the
+    # 中文: 以确保可以将块变体与
     # non-chunk variant.
+    # 中文: 非块变体。
     type: Literal["FunctionMessageChunk"] = "FunctionMessageChunk"  # type: ignore[assignment]
-    """The type of the message (used for serialization)."""
+    """The type of the message (used for serialization).
+
+    中文翻译:
+    消息的类型（用于序列化）。"""
 
     @override
     def __add__(self, other: Any) -> BaseMessageChunk:  # type: ignore[override]

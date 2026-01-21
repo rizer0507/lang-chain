@@ -68,15 +68,52 @@ class GoogleTransTranslator:
         if text in self._cache:
             return self._cache[text]
 
-        # 限流：避免请求过快被Google封禁
+        # 限流
         self._rate_limit()
 
         try:
-            # Google Translate API有长度限制（约5000字符），如果太长需要分割
-            # deep-translator 应该自动处理了一些，但为了安全我们尽量分段或处理异常
-            result = self.translator.translate(text)
+            # Google Translate API有长度限制（约5000字符）
+            # 我们设定一个较安全的限制，例如4500字符
+            MAX_LENGTH = 4500
+
+            if len(text) <= MAX_LENGTH:
+                result = self.translator.translate(text)
+                self._cache[text] = result
+                return result
+
+            # 长文本处理：按行切分
+            print(f"    [提示] 文本过长 ({len(text)} 字符)，正在分段翻译...")
+            lines = text.splitlines(keepends=True)
+            parts = []
+            current_chunk = []
+            current_length = 0
+
+            for line in lines:
+                # 如果当前块加上新行超过限制，先翻译当前块
+                if current_length + len(line) > MAX_LENGTH:
+                    if current_chunk:
+                        chunk_text = "".join(current_chunk)
+                        part_result = self.translator.translate(chunk_text)
+                        parts.append(part_result)
+                        # 每次翻译后也稍微限流一下
+                        self._rate_limit()
+
+                    current_chunk = [line]
+                    current_length = len(line)
+                else:
+                    current_chunk.append(line)
+                    current_length += len(line)
+
+            # 处理剩余块
+            if current_chunk:
+                chunk_text = "".join(current_chunk)
+                parts.append(self.translator.translate(chunk_text))
+
+            # 合并结果
+            result = "".join(parts)
             self._cache[text] = result
             return result
+
         except Exception as e:
             print(f"翻译错误: {e}")
             return text

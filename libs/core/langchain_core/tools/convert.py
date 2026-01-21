@@ -1,4 +1,7 @@
-"""Convert functions and runnables to tools."""
+"""Convert functions and runnables to tools.
+
+中文翻译:
+将函数和可运行对象转换为工具。"""
 
 import inspect
 from collections.abc import Callable
@@ -166,12 +169,14 @@ def tool(
         @tool
         def search_api(query: str) -> str:
             # Searches the API for the query.
+            # 中文: 在 API 中搜索查询。
             return
 
 
         @tool("search", return_direct=True)
         def search_api(query: str) -> str:
             # Searches the API for the query.
+            # 中文: 在 API 中搜索查询。
             return
 
 
@@ -224,11 +229,13 @@ def tool(
 
         ```python
         # No args section
+        # 中文: 没有参数部分
         def invalid_docstring_1(bar: str, baz: int) -> str:
             \"\"\"The foo.\"\"\"
             return bar
 
         # Improper whitespace between summary and args section
+        # 中文: 摘要和参数部分之间的空格不正确
         def invalid_docstring_2(bar: str, baz: int) -> str:
             \"\"\"The foo.
             Args:
@@ -238,6 +245,7 @@ def tool(
             return bar
 
         # Documented args absent from function signature
+        # 中文: 函数签名中缺少记录的参数
         def invalid_docstring_3(bar: str, baz: int) -> str:
             \"\"\"The foo.
 
@@ -248,7 +256,139 @@ def tool(
             return bar
 
         ```
-    """  # noqa: D214, D410, D411  # We're intentionally showing bad formatting in examples
+    
+
+    中文翻译:
+    将 Python 函数和 Runnables 转换为 LangChain 工具。
+    可以用作带或不带参数的装饰器，以从函数创建工具。
+    函数可以有任何签名 - 该工具将自动推断输入模式
+    除非禁用。
+    ！！！注意“要求”
+        - 函数必须具有类型提示才能进行正确的模式推断
+        - 当 `infer_schema=False` 时，函数必须是 `(str) -> str` 并且具有
+            文档字符串
+        - 与“Runnable”一起使用时，必须提供字符串名称
+    参数：
+        name_or_callable：工具或“Callable”的可选名称
+            转换为工具。覆盖函数的名称。
+            必须作为位置参数提供。
+        runnable：可选的“Runnable”，可转换为工具。
+            必须作为位置参数提供。
+        描述：工具的可选描述。
+            工具描述值的优先级如下：
+            - 这个“描述”参数
+                （即使提供了文档字符串和/或 `args_schema` 也可以使用）
+            - 工具函数文档字符串
+                （即使提供了“args_schema”也可以使用）
+            - `args_schema` 描述
+                （仅在未提供“描述”和文档字符串时使用）
+        *args：额外的位置参数。必须是空的。
+        return_direct：是否直接从工具返回而不是继续
+            代理循环。
+        args_schema：供用户指定的可选参数架构。
+        infer_schema：是否从函数的参数推断模式
+            签名。这也使得生成的工具接受字典输入
+            它的“run()”函数。
+        response_format：工具响应格式。
+            如果为“内容”，则该工具的输出将被解释为内容
+            “ToolMessage”的。
+            如果是“content_and_artifact”，那么输出预计是一个二元组
+            对应于“ToolMessage”的“(content,artifact)”。
+        parse_docstring：如果 `infer_schema` 和 `parse_docstring`，将尝试
+            从 Google Style 函数文档字符串中解析参数描述。
+        error_on_invalid_docstring：如果提供了“parse_docstring”，请配置
+            是否在无效的 Google 样式文档字符串上引发“ValueError”。
+        extras：工具的可选特定于提供商的额外字段。
+            用于传递不适合标准工具字段的配置。
+            在构建模型有效负载时，聊天模型应该处理已知的额外内容。
+            ！！！例子
+                例如，人类特定的字段，如“cache_control”，
+                `defer_loading` 或 `input_examples`。
+    加薪：
+        ValueError：如果提供了太多位置参数（例如违反了
+            `*args` 约束）。
+        ValueError：如果提供的“Runnable”没有字符串名称。使用“工具”时
+            对于“Runnable”，必须提供“str”名称作为“name_or_callable”。
+        ValueError：如果第一个参数不是字符串或可调用
+            一个 `__name__` 属性。
+        ValueError：如果函数没有文档字符串和描述
+            未提供且“infer_schema”为“False”。
+        ValueError：如果“parse_docstring”为“True”并且该函数具有无效值
+            Google 风格的文档字符串和 `error_on_invalid_docstring` 为 True。
+        ValueError：如果提供的“Runnable”没有对象模式。
+    返回：
+        工具。
+    示例：
+        ````蟒蛇
+        @工具
+        def search_api(查询: str) -> str:
+            # 在 API 中搜索查询。
+            返回
+        @tool("搜索", return_direct=True)
+        def search_api(查询: str) -> str:
+            # 在 API 中搜索查询。
+            返回
+        @工具（response_format =“content_and_artifact”）
+        def search_api(query: str) -> tuple[str, dict]:
+            return "结果的部分 json", {"full": "结果的对象"}
+        ````
+        解析 Google 风格的文档字符串：
+        ````蟒蛇
+        @工具（parse_docstring = True）
+        def foo(bar: str, baz: int) -> str:
+            \"\"\"foo.
+            参数：
+                酒吧：酒吧。
+                巴兹：巴兹。
+            \"\"\"
+            返回栏
+        foo.args_schema.model_json_schema()
+        ````
+        ````蟒蛇
+        {“标题”：“富”，
+            "description": "foo。",
+            “类型”：“对象”，
+            “属性”：{
+                “酒吧”：{
+                    "title": "酒吧",
+                    "description": "酒吧。",
+                    “类型”：“字符串”，
+                },
+                “巴兹”：{
+                    “标题”：“巴兹”，
+                    "description": "巴兹。",
+                    “类型”：“整数”，
+                },
+            },
+            “必需”：[“酒吧”，“巴兹”]，
+        }
+        ````
+        请注意，如果文档字符串默认解析将引发“ValueError”
+        被视为无效。如果文档字符串包含以下内容，则该文档字符串被视为无效
+        参数不在函数签名中，或者无法解析为
+        摘要和“Args:”块。示例如下：
+        ````蟒蛇
+        # 没有参数部分
+        def invalid_docstring_1(bar: str, baz: int) -> str:
+            \"\"\"foo。\"\"\"
+            返回栏
+        # 摘要和参数部分之间的空格不正确
+        def invalid_docstring_2(bar: str, baz: int) -> str:
+            \"\"\"foo.
+            参数：
+                酒吧：酒吧。
+                巴兹：巴兹。
+            \"\"\"
+            返回栏
+        # 函数签名中缺少记录的参数
+        def invalid_docstring_3(bar: str, baz: int) -> str:
+            \"\"\"foo.
+            参数：
+                香蕉：酒吧。
+                猴子：巴兹。
+            \"\"\"
+            返回栏
+        ````"""  # noqa: D214, D410, D411  # We're intentionally showing bad formatting in examples
 
     def _create_tool_factory(
         tool_name: str,
@@ -260,7 +400,14 @@ def tool(
 
         Returns:
             A function that takes a callable or Runnable and returns a tool.
-        """
+        
+
+        中文翻译:
+        创建一个接受可调用对象并返回工具的装饰器。
+        参数：
+            tool_name：将分配给工具的名称。
+        返回：
+            接受可调用或可运行并返回工具的函数。"""
 
         def _tool_factory(dec_func: Callable | Runnable) -> BaseTool:
             tool_description = description
@@ -309,7 +456,9 @@ def tool(
                     extras=extras,
                 )
             # If someone doesn't want a schema applied, we must treat it as
+            # 中文: 如果有人不想应用模式，我们必须将其视为
             # a simple string->string function
+            # 中文: 一个简单的字符串->字符串函数
             if dec_func.__doc__ is None:
                 msg = (
                     "Function must have a docstring if "
@@ -330,15 +479,21 @@ def tool(
 
     if len(args) != 0:
         # Triggered if a user attempts to use positional arguments that
+        # 中文: 如果用户尝试使用位置参数，则触发
         # do not exist in the function signature
+        # 中文: 函数签名中不存在
         # e.g., @tool("name", runnable, "extra_arg")
+        # 中文: 例如，@tool("name", runnable, "extra_arg")
         # Here, "extra_arg" is not a valid argument
+        # 中文: 这里，“extra_arg”不是一个有效的参数
         msg = "Too many arguments for tool decorator. A decorator "
         raise ValueError(msg)
 
     if runnable is not None:
         # tool is used as a function
+        # 中文: 工具被用作函数
         # for instance tool_from_runnable = tool("name", runnable)
+        # 中文: 例如 tool_from_runnable = tool("name", runnable)
         if not name_or_callable:
             msg = "Runnable without name for tool constructor"
             raise ValueError(msg)
@@ -349,21 +504,35 @@ def tool(
     if name_or_callable is not None:
         if callable(name_or_callable) and hasattr(name_or_callable, "__name__"):
             # Used as a decorator without parameters
+            # 中文: 用作不带参数的装饰器
             # @tool
+            # 中文: @工具
             # def my_tool():
+            # 中文: def my_tool():
             #    pass
+            #    中文: 经过
             return _create_tool_factory(name_or_callable.__name__)(name_or_callable)
         if isinstance(name_or_callable, str):
             # Used with a new name for the tool
+            # 中文: 与工具的新名称一起使用
             # @tool("search")
+            # 中文: @工具（“搜索”）
             # def my_tool():
+            # 中文: def my_tool():
             #    pass
+            #    中文: 经过
             #
             # or
             #
+            中文: ＃ 或者
+            #
             # @tool("search", parse_docstring=True)
+            #
+            中文: # @tool("搜索", parse_docstring=True)
             # def my_tool():
+            # 中文: def my_tool():
             #    pass
+            #    中文: 经过
             return _create_tool_factory(name_or_callable)
         msg = (
             f"The first argument must be a string or a callable with a __name__ "
@@ -372,11 +541,18 @@ def tool(
         raise ValueError(msg)
 
     # Tool is used as a decorator with parameters specified
+    # 中文: 工具用作指定参数的装饰器
     # @tool(parse_docstring=True)
+    # 中文: @工具（parse_docstring = True）
     # def my_tool():
+    # 中文: def my_tool():
     #    pass
+    #    中文: 经过
     def _partial(func: Callable | Runnable) -> BaseTool:
-        """Partial function that takes a callable and returns a tool."""
+        """Partial function that takes a callable and returns a tool.
+
+        中文翻译:
+        接受可调用对象并返回工具的部分函数。"""
         name_ = func.get_name() if isinstance(func, Runnable) else func.__name__
         tool_factory = _create_tool_factory(name_)
         return tool_factory(func)
@@ -385,7 +561,10 @@ def tool(
 
 
 def _get_description_from_runnable(runnable: Runnable) -> str:
-    """Generate a placeholder description of a runnable."""
+    """Generate a placeholder description of a runnable.
+
+    中文翻译:
+    生成可运行程序的占位符描述。"""
     input_schema = runnable.input_schema.model_json_schema()
     return f"Takes {input_schema}."
 
@@ -395,7 +574,10 @@ def _get_schema_from_runnable_and_arg_types(
     name: str,
     arg_types: dict[str, type] | None = None,
 ) -> type[BaseModel]:
-    """Infer args_schema for tool."""
+    """Infer args_schema for tool.
+
+    中文翻译:
+    推断工具的 args_schema。"""
     if arg_types is None:
         try:
             arg_types = get_type_hints(runnable.InputType)
@@ -429,7 +611,18 @@ def convert_runnable_to_tool(
 
     Returns:
         The tool.
-    """
+    
+
+    中文翻译:
+    将 Runnable 转换为 BaseTool。
+    参数：
+        runnable：要转换的runnable。
+        args_schema：工具输入参数的架构。
+        名称：工具的名称。
+        描述：工具的描述。
+        arg_types：参数的类型。
+    返回：
+        工具。"""
     if args_schema:
         runnable = runnable.with_types(input_type=args_schema)
     description = description or _get_description_from_runnable(runnable)

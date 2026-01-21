@@ -1,4 +1,14 @@
-"""Execution policies for the persistent shell middleware."""
+"""Shell 执行策略模块（内部使用）。
+
+本模块定义持久化 Shell 会话的执行策略。
+
+核心类:
+--------
+**BaseExecutionPolicy**: 执行策略基类
+**HostExecutionPolicy**: 主机直接执行策略
+**CodexSandboxExecutionPolicy**: Codex CLI 沙箱策略
+**DockerExecutionPolicy**: Docker 容器执行策略
+"""
 
 from __future__ import annotations
 
@@ -62,7 +72,16 @@ class BaseExecutionPolicy(abc.ABC):
     `CodexSandboxExecutionPolicy` when the Codex CLI sandbox is available and you want
     additional syscall restrictions; and `DockerExecutionPolicy` for container-level
     isolation using Docker.
-    """
+    
+
+    中文翻译:
+    持久 shell 会话的配置契约。
+    具体子类封装了 shell 进程如何启动和约束。
+    每项策略都记录了其安全保证和操作环境
+    这是合适的。使用“HostExecutionPolicy”进行可信的同主机执行；
+    当 Codex CLI 沙箱可用并且您想要时，`CodexSandboxExecutionPolicy`
+    额外的系统调用限制；和容器级别的“DockerExecutionPolicy”
+    使用 Docker 进行隔离。"""
 
     command_timeout: float = 30.0
     startup_timeout: float = 30.0
@@ -83,7 +102,10 @@ class BaseExecutionPolicy(abc.ABC):
         env: Mapping[str, str],
         command: Sequence[str],
     ) -> subprocess.Popen[str]:
-        """Launch the persistent shell process."""
+        """Launch the persistent shell process.
+
+        中文翻译:
+        启动持久 shell 进程。"""
 
 
 @dataclass
@@ -100,7 +122,19 @@ class HostExecutionPolicy(BaseExecutionPolicy):
     shell starts. On macOS, where `prlimit` is unavailable, limits are set in a
     `preexec_fn` before `exec`. In both cases the shell runs in its own process group
     so timeouts can terminate the full subtree.
-    """
+    
+
+    中文翻译:
+    直接在主机进程上运行 shell。
+    此策略最适合受信任或单租户环境（CI 作业、
+    开发人员工作站、预沙盒容器），代理必须在其中访问
+    主机文件系统和工具，无需额外隔离。强制执行可选 CPU 和
+    内存限制以防止命令失控，但不提供**不**文件系统或网络
+    沙箱；命令可以修改进程用户可以访问的任何内容。
+    在 Linux 平台上，资源限制是在之后使用“resource.prlimit”应用的
+    外壳启动。在 macOS 上，“prlimit”不可用，限制是在
+    `exec` 之前的 `preexec_fn`。在这两种情况下，shell 都在其自己的进程组中运行
+    所以超时可以终止整个子树。"""
 
     cpu_time_seconds: int | None = None
     memory_bytes: int | None = None
@@ -205,7 +239,19 @@ class CodexSandboxExecutionPolicy(BaseExecutionPolicy):
     Configure sandbox behavior via `config_overrides` to align with your Codex CLI
     profile. This policy does not add its own resource limits; combine it with
     host-level guards (cgroups, container resource limits) as needed.
-    """
+    
+
+    中文翻译:
+    通过 Codex CLI 沙箱启动 shell。
+    当您安装了 Codex CLI 并需要额外的系统调用和
+    Anthropic 的 Seatbelt (macOS) 或 Landlock/seccomp 提供的文件系统限制
+    (Linux) 配置文件。命令仍然在主机上运行，但在请求的沙箱内运行
+    CLI。如果 Codex 二进制文件不可用或运行时缺少所需的
+    内核功能（例如，某些容器内的锁），进程启动失败并显示
+    `运行时错误`。
+    通过“config_overrides”配置沙箱行为以与您的 Codex CLI 保持一致
+    简介。该策略不添加自己的资源限制；将其与
+    根据需要进行主机级防护（cgroup、容器资源限制）。"""
 
     binary: str = "codex"
     platform: typing.Literal["auto", "macos", "linux"] = "auto"
@@ -283,7 +329,21 @@ class DockerExecutionPolicy(BaseExecutionPolicy):
     review any additional volumes or capabilities passed through ``extra_run_args``. The
     default image is `python:3.12-alpine3.19`; supply a custom image if you need
     preinstalled tooling.
-    """
+    
+
+    中文翻译:
+    在专用 Docker 容器内运行 shell。
+    当命令来自不受信任的用户或您需要时选择此策略
+    会话之间的强隔离。默认情况下，工作区仅是绑定安装的
+    当它引用现有的非临时目录时；临时会话运行
+    无需安装即可最大程度地减少主机暴露。容器的网络命名空间是
+    默认情况下禁用（“--network none”），您可以通过以下方式启用进一步强化
+    `read_only_rootfs` 和 `user`。
+    安全保证取决于您的 Docker 守护进程配置。运行代理
+    Docker 被锁定的主机（无根模式、AppArmor/SELinux 等）以及
+    检查通过“extra_run_args”传递的任何附加卷或功能。的
+    默认镜像是`python:3.12-alpine3.19`；如果需要，提供自定义图像
+    预安装的工具。"""
 
     binary: str = "docker"
     image: str = "python:3.12-alpine3.19"

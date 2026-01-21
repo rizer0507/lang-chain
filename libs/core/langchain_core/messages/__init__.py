@@ -1,4 +1,7 @@
-"""**Messages** are objects used in prompts and chat conversations."""
+"""**Messages** are objects used in prompts and chat conversations.
+
+中文翻译:
+**消息**是提示和聊天对话中使用的对象。"""
 
 from typing import TYPE_CHECKING
 

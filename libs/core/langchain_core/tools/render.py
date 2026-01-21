@@ -1,4 +1,7 @@
-"""Utilities to render tools."""
+"""Utilities to render tools.
+
+中文翻译:
+渲染工具的实用程序。"""
 
 from __future__ import annotations
 
@@ -25,7 +28,19 @@ def render_text_description(tools: list[BaseTool]) -> str:
     search: This tool is used for search
     calculator: This tool is used for math
     ```
-    """
+    
+
+    中文翻译:
+    以纯文本形式呈现工具名称和描述。
+    参数：
+        工具：渲染工具。
+    返回：
+        渲染的文本。
+    输出将采用以下格式：
+    ````txt
+    搜索：该工具用于搜索
+    计算器：这个工具用于数学计算
+    ````"""
     descriptions = []
     for tool in tools:
         if hasattr(tool, "func") and tool.func:
@@ -54,7 +69,20 @@ def render_text_description_and_args(tools: list[BaseTool]) -> str:
     calculator: This tool is used for math, \
     args: {"expression": {"type": "string"}}
     ```
-    """
+    
+
+    中文翻译:
+    以纯文本形式呈现工具名称、描述和参数。
+    参数：
+        工具：渲染工具。
+    返回：
+        渲染的文本。
+    输出将采用以下格式：
+    ````txt
+    search: 该工具用于搜索，args: {"query": {"type": "string"}}
+    计算器：这个工具用于数学计算，\
+    args: {"表达式": {"类型": "字符串"}}
+    ````"""
     tool_strings = []
     for tool in tools:
         args_schema = str(tool.args)

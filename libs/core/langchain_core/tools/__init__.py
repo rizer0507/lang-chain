@@ -2,6 +2,11 @@
 
 Each tool has a **description**. Agent uses the description to choose the right
 tool for the job.
+
+中文翻译:
+**工具**是代理用来与世界交互的类。
+每个工具都有一个**描述**。代理根据描述选择正确的
+工作的工具。
 """
 
 from __future__ import annotations

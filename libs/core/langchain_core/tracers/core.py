@@ -1,4 +1,7 @@
-"""Utilities for the root listener."""
+"""Utilities for the root listener.
+
+中文翻译:
+根侦听器的实用程序。"""
 
 from __future__ import annotations
 
@@ -41,7 +44,11 @@ class _TracerCore(ABC):
     """Abstract base class for tracers.
 
     This class provides common methods, and reusable methods for tracers.
-    """
+    
+
+    中文翻译:
+    跟踪器的抽象基类。
+    此类提供了跟踪器的常用方法和可重用方法。"""
 
     log_missing_parent: bool = True
 
@@ -70,29 +77,61 @@ class _TracerCore(ABC):
                   except it does NOT raise an attribute error on_chat_model_start
             **kwargs: Additional keyword arguments that will be passed to
                 the superclass.
-        """
+        
+
+        中文翻译:
+        初始化跟踪器。
+        参数：
+            _schema_format：主要改变输入和输出的方式
+                处理。仅供内部使用。这个API将会改变。
+                -“原始”是所有当前跟踪器使用的格式。
+                  此格式与输入略有不一致
+                  和输出。
+                - 'streaming_events' 用于支持流事件，
+                  供内部使用。将来可能会改变，或者
+                  完全弃用，转而使用专用的异步跟踪器
+                  用于流式传输事件。
+                - “original+chat”是与“original”相同的格式
+                  除非它不会在 on_chat_model_start 上引发属性错误
+            **kwargs：将传递给的附加关键字参数
+                超类。"""
         super().__init__(**kwargs)
         self._schema_format = _schema_format  # For internal use only API will change.
         self.run_map: dict[str, Run] = {}
-        """Map of run ID to run. Cleared on run end."""
+        """Map of run ID to run. Cleared on run end.
+
+        中文翻译:
+        要运行的运行 ID 的映射。在运行结束时清除。"""
         self.order_map: dict[UUID, tuple[UUID, str]] = {}
-        """Map of run ID to (trace_id, dotted_order). Cleared when tracer GCed."""
+        """Map of run ID to (trace_id, dotted_order). Cleared when tracer GCed.
+
+        中文翻译:
+        运行 ID 到 (trace_id, dotted_order) 的映射。当跟踪器 GC 时清除。"""
 
     @abstractmethod
     def _persist_run(self, run: Run) -> Coroutine[Any, Any, None] | None:
-        """Persist a run."""
+        """Persist a run.
+
+        中文翻译:
+        坚持跑步。"""
 
     @staticmethod
     def _add_child_run(
         parent_run: Run,
         child_run: Run,
     ) -> None:
-        """Add child run to a chain run or tool run."""
+        """Add child run to a chain run or tool run.
+
+        中文翻译:
+        将子运行添加到链运行或工具运行中。"""
         parent_run.child_runs.append(child_run)
 
     @staticmethod
     def _get_stacktrace(error: BaseException) -> str:
-        """Get the stacktrace of the parent error."""
+        """Get the stacktrace of the parent error.
+
+        中文翻译:
+        获取父错误的堆栈跟踪。"""
         msg = repr(error)
         try:
             tb = traceback.format_exception(error)
@@ -154,15 +193,25 @@ class _TracerCore(ABC):
         name: str | None = None,
         **kwargs: Any,
     ) -> Run:
-        """Create a chat model run."""
+        """Create a chat model run.
+
+        中文翻译:
+        创建聊天模型运行。"""
         if self._schema_format not in {"streaming_events", "original+chat"}:
             # Please keep this un-implemented for backwards compatibility.
+            # 中文: 为了向后兼容，请保持此未实现。
             # When it's unimplemented old tracers that use the "original" format
+            # 中文: 当未实现使用“原始”格式的旧跟踪器时
             # fallback on the on_llm_start method implementation if they
+            # 中文: on_llm_start 方法实现的回退，如果
             # find that the on_chat_model_start method is not implemented.
+            # 中文: 发现on_chat_model_start方法没有实现。
             # This can eventually be cleaned up by writing a "modern" tracer
+            # 中文: 这最终可以通过编写“现代”跟踪器来清理
             # that has all the updated schema changes corresponding to
+            # 中文: 具有对应于的所有更新的架构更改
             # the "streaming_events" format.
+            # 中文: “streaming_events”格式。
             msg = (
                 f"Chat model tracing is not supported in "
                 f"for {self._schema_format} format."
@@ -180,8 +229,11 @@ class _TracerCore(ABC):
             events=[{"name": "start", "time": start_time}],
             start_time=start_time,
             # WARNING: This is valid ONLY for streaming_events.
+            # 中文: 警告：这仅对streaming_events有效。
             # run_type="llm" is what's used by virtually all tracers.
+            # 中文: run_type="llm" 是几乎所有跟踪器都使用的。
             # Changing this to "chat_model" may break triggering on_llm_start
+            # 中文: 将其更改为“chat_model”可能会中断 on_llm_start 的触发
             run_type="chat_model",
             tags=tags,
             name=name,
@@ -198,7 +250,10 @@ class _TracerCore(ABC):
         name: str | None = None,
         **kwargs: Any,
     ) -> Run:
-        """Create a llm run."""
+        """Create a llm run.
+
+        中文翻译:
+        创建 llm 运行。"""
         start_time = datetime.now(timezone.utc)
         if metadata:
             kwargs.update({"metadata": metadata})
@@ -223,7 +278,10 @@ class _TracerCore(ABC):
         chunk: GenerationChunk | ChatGenerationChunk | None = None,
         parent_run_id: UUID | None = None,  # noqa: ARG002
     ) -> Run:
-        """Append token event to LLM run and return the run."""
+        """Append token event to LLM run and return the run.
+
+        中文翻译:
+        将令牌事件附加到 LLM 运行并返回运行。"""
         llm_run = self._get_run(run_id, run_type={"llm", "chat_model"})
         event_kwargs: dict[str, Any] = {"token": token}
         if chunk:
@@ -332,7 +390,10 @@ class _TracerCore(ABC):
         name: str | None = None,
         **kwargs: Any,
     ) -> Run:
-        """Create a chain Run."""
+        """Create a chain Run.
+
+        中文翻译:
+        创建链运行。"""
         start_time = datetime.now(timezone.utc)
         if metadata:
             kwargs.update({"metadata": metadata})
@@ -351,7 +412,10 @@ class _TracerCore(ABC):
         )
 
     def _get_chain_inputs(self, inputs: Any) -> Any:
-        """Get the inputs for a chain run."""
+        """Get the inputs for a chain run.
+
+        中文翻译:
+        获取链运行的输入。"""
         if self._schema_format in {"original", "original+chat"}:
             return inputs if isinstance(inputs, dict) else {"input": inputs}
         if self._schema_format == "streaming_events":
@@ -362,7 +426,10 @@ class _TracerCore(ABC):
         raise ValueError(msg)
 
     def _get_chain_outputs(self, outputs: Any) -> Any:
-        """Get the outputs for a chain run."""
+        """Get the outputs for a chain run.
+
+        中文翻译:
+        获取链运行的输出。"""
         if self._schema_format in {"original", "original+chat"}:
             return outputs if isinstance(outputs, dict) else {"output": outputs}
         if self._schema_format == "streaming_events":
@@ -378,7 +445,10 @@ class _TracerCore(ABC):
         run_id: UUID,
         inputs: dict[str, Any] | None = None,
     ) -> Run:
-        """Update a chain run with outputs and end time."""
+        """Update a chain run with outputs and end time.
+
+        中文翻译:
+        使用输出和结束时间更新链运行。"""
         chain_run = self._get_run(run_id)
         if getattr(chain_run, "outputs", None) is None:
             chain_run.outputs = {}
@@ -418,7 +488,10 @@ class _TracerCore(ABC):
         inputs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Run:
-        """Create a tool run."""
+        """Create a tool run.
+
+        中文翻译:
+        创建工具运行。"""
         start_time = datetime.now(timezone.utc)
         if metadata:
             kwargs.update({"metadata": metadata})
@@ -436,6 +509,7 @@ class _TracerCore(ABC):
             parent_run_id=parent_run_id,
             serialized=serialized,
             # Wrapping in dict since Run requires a dict object.
+            # 中文: 自 Run 以来包装在 dict 中需要一个 dict 对象。
             inputs=inputs,
             extra=kwargs,
             events=[{"name": "start", "time": start_time}],
@@ -451,7 +525,10 @@ class _TracerCore(ABC):
         output: dict[str, Any],
         run_id: UUID,
     ) -> Run:
-        """Update a tool run with outputs and end time."""
+        """Update a tool run with outputs and end time.
+
+        中文翻译:
+        使用输出和结束时间更新工具运行。"""
         tool_run = self._get_run(run_id, run_type="tool")
         if getattr(tool_run, "outputs", None) is None:
             tool_run.outputs = {}
@@ -466,7 +543,10 @@ class _TracerCore(ABC):
         error: BaseException,
         run_id: UUID,
     ) -> Run:
-        """Update a tool run with error and end time."""
+        """Update a tool run with error and end time.
+
+        中文翻译:
+        更新带有错误和结束时间的工具运行。"""
         tool_run = self._get_run(run_id, run_type="tool")
         tool_run.error = self._get_stacktrace(error)
         tool_run.end_time = datetime.now(timezone.utc)
@@ -484,7 +564,10 @@ class _TracerCore(ABC):
         name: str | None = None,
         **kwargs: Any,
     ) -> Run:
-        """Create a retrieval run."""
+        """Create a retrieval run.
+
+        中文翻译:
+        创建检索运行。"""
         start_time = datetime.now(timezone.utc)
         if metadata:
             kwargs.update({"metadata": metadata})
@@ -507,7 +590,10 @@ class _TracerCore(ABC):
         documents: Sequence[Document],
         run_id: UUID,
     ) -> Run:
-        """Update a retrieval run with outputs and end time."""
+        """Update a retrieval run with outputs and end time.
+
+        中文翻译:
+        使用输出和结束时间更新检索运行。"""
         retrieval_run = self._get_run(run_id, run_type="retriever")
         if getattr(retrieval_run, "outputs", None) is None:
             retrieval_run.outputs = {}
@@ -531,11 +617,17 @@ class _TracerCore(ABC):
         return retrieval_run
 
     def __deepcopy__(self, memo: dict) -> _TracerCore:
-        """Return self deepcopied."""
+        """Return self deepcopied.
+
+        中文翻译:
+        返回自我深度复制。"""
         return self
 
     def __copy__(self) -> _TracerCore:
-        """Return self copied."""
+        """Return self copied.
+
+        中文翻译:
+        返回自己复制的。"""
         return self
 
     def _end_trace(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -543,7 +635,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The run.
-        """
+        
+
+        中文翻译:
+        结束跑步追踪。
+        参数：
+            奔：奔跑。"""
         return None
 
     def _on_run_create(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -551,7 +648,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The created run.
-        """
+        
+
+        中文翻译:
+        创建时处理运行。
+        参数：
+            run：创建的运行。"""
         return None
 
     def _on_run_update(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -559,7 +661,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The updated run.
-        """
+        
+
+        中文翻译:
+        更新时处理运行。
+        参数：
+            运行：更新后的运行。"""
         return None
 
     def _on_llm_start(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -567,7 +674,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The LLM run.
-        """
+        
+
+        中文翻译:
+        启动时处理 LLM 运行。
+        参数：
+            运行：法学硕士运行。"""
         return None
 
     def _on_llm_new_token(
@@ -582,7 +694,14 @@ class _TracerCore(ABC):
             run: The LLM run.
             token: The new token.
             chunk: Optional chunk.
-        """
+        
+
+        中文翻译:
+        处理新的 LLM 令牌。
+        参数：
+            运行：法学硕士运行。
+            令牌：新令牌。
+            chunk：可选块。"""
         return None
 
     def _on_llm_end(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -590,7 +709,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The LLM run.
-        """
+        
+
+        中文翻译:
+        处理 LLM 运行。
+        参数：
+            运行：法学硕士运行。"""
         return None
 
     def _on_llm_error(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -598,7 +722,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The LLM run.
-        """
+        
+
+        中文翻译:
+        出现错误时处理 LLM 运行。
+        参数：
+            运行：法学硕士运行。"""
         return None
 
     def _on_chain_start(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -606,7 +735,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The chain run.
-        """
+        
+
+        中文翻译:
+        启动时处理 Chain Run。
+        参数：
+            运行：连锁运行。"""
         return None
 
     def _on_chain_end(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -614,7 +748,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The chain run.
-        """
+        
+
+        中文翻译:
+        处理链运行。
+        参数：
+            运行：连锁运行。"""
         return None
 
     def _on_chain_error(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -622,7 +761,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The chain run.
-        """
+        
+
+        中文翻译:
+        处理出错时的 Chain Run。
+        参数：
+            运行：连锁运行。"""
         return None
 
     def _on_tool_start(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -630,7 +774,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The tool run.
-        """
+        
+
+        中文翻译:
+        启动时处理工具运行。
+        参数：
+            运行：工具运行。"""
         return None
 
     def _on_tool_end(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -638,7 +787,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The tool run.
-        """
+        
+
+        中文翻译:
+        处理工具运行。
+        参数：
+            运行：工具运行。"""
         return None
 
     def _on_tool_error(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -646,7 +800,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The tool run.
-        """
+        
+
+        中文翻译:
+        处理出现错误时的工具运行。
+        参数：
+            运行：工具运行。"""
         return None
 
     def _on_chat_model_start(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -654,7 +813,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The chat model run.
-        """
+        
+
+        中文翻译:
+        启动时处理聊天模型运行。
+        参数：
+            run：聊天模型运行。"""
         return None
 
     def _on_retriever_start(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -662,7 +826,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The retriever run.
-        """
+        
+
+        中文翻译:
+        启动时处理 Retriever Run。
+        参数：
+            运行：检索器运行。"""
         return None
 
     def _on_retriever_end(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -670,7 +839,12 @@ class _TracerCore(ABC):
 
         Args:
             run: The retriever run.
-        """
+        
+
+        中文翻译:
+        处理检索器运行。
+        参数：
+            运行：检索器运行。"""
         return None
 
     def _on_retriever_error(self, run: Run) -> Coroutine[Any, Any, None] | None:  # noqa: ARG002
@@ -678,5 +852,10 @@ class _TracerCore(ABC):
 
         Args:
             run: The retriever run.
-        """
+        
+
+        中文翻译:
+        处理错误时的检索器运行。
+        参数：
+            运行：检索器运行。"""
         return None

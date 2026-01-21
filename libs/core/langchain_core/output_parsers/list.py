@@ -1,4 +1,7 @@
-"""Parsers for list output."""
+"""Parsers for list output.
+
+中文翻译:
+列表输出的解析器。"""
 
 from __future__ import annotations
 
@@ -32,7 +35,15 @@ def droplastn(
 
     Yields:
         The elements of the iterator, except the last n elements.
-    """
+    
+
+    中文翻译:
+    删除迭代器的最后 n 个元素。
+    参数：
+        iter：从中删除元素的迭代器。
+        n：要删除的元素数量。
+    产量：
+        迭代器的元素，最后 n 个元素除外。"""
     buffer: deque[T] = deque()
     for item in iter:
         buffer.append(item)
@@ -41,7 +52,10 @@ def droplastn(
 
 
 class ListOutputParser(BaseTransformOutputParser[list[str]]):
-    """Parse the output of a model to a list."""
+    """Parse the output of a model to a list.
+
+    中文翻译:
+    将模型的输出解析为列表。"""
 
     @property
     def _type(self) -> str:
@@ -56,7 +70,14 @@ class ListOutputParser(BaseTransformOutputParser[list[str]]):
 
         Returns:
             A list of strings.
-        """
+        
+
+        中文翻译:
+        解析 LLM 调用的输出。
+        参数：
+            文本：LLM 调用的输出。
+        返回：
+            字符串列表。"""
 
     def parse_iter(self, text: str) -> Iterator[re.Match]:
         """Parse the output of an LLM call.
@@ -66,7 +87,14 @@ class ListOutputParser(BaseTransformOutputParser[list[str]]):
 
         Yields:
             A match object for each part of the output.
-        """
+        
+
+        中文翻译:
+        解析 LLM 调用的输出。
+        参数：
+            文本：LLM 调用的输出。
+        产量：
+            输出的每个部分的匹配对象。"""
         raise NotImplementedError
 
     @override
@@ -75,17 +103,21 @@ class ListOutputParser(BaseTransformOutputParser[list[str]]):
         for chunk in input:
             if isinstance(chunk, BaseMessage):
                 # Extract text
+                # 中文: 提取文本
                 chunk_content = chunk.content
                 if not isinstance(chunk_content, str):
                     continue
                 buffer += chunk_content
             else:
                 # Add current chunk to buffer
+                # 中文: 将当前块添加到缓冲区
                 buffer += chunk
             # Parse buffer into a list of parts
+            # 中文: 将缓冲区解析为零件列表
             try:
                 done_idx = 0
                 # Yield only complete parts
+                # 中文: 只生产完整的零件
                 for m in droplastn(self.parse_iter(buffer), 1):
                     done_idx = m.end()
                     yield [m.group(1)]
@@ -93,11 +125,13 @@ class ListOutputParser(BaseTransformOutputParser[list[str]]):
             except NotImplementedError:
                 parts = self.parse(buffer)
                 # Yield only complete parts
+                # 中文: 只生产完整的零件
                 if len(parts) > 1:
                     for part in parts[:-1]:
                         yield [part]
                     buffer = parts[-1]
         # Yield the last part
+        # 中文: 产生最后一部分
         for part in self.parse(buffer):
             yield [part]
 
@@ -109,17 +143,21 @@ class ListOutputParser(BaseTransformOutputParser[list[str]]):
         async for chunk in input:
             if isinstance(chunk, BaseMessage):
                 # Extract text
+                # 中文: 提取文本
                 chunk_content = chunk.content
                 if not isinstance(chunk_content, str):
                     continue
                 buffer += chunk_content
             else:
                 # Add current chunk to buffer
+                # 中文: 将当前块添加到缓冲区
                 buffer += chunk
             # Parse buffer into a list of parts
+            # 中文: 将缓冲区解析为零件列表
             try:
                 done_idx = 0
                 # Yield only complete parts
+                # 中文: 只生产完整的零件
                 for m in droplastn(self.parse_iter(buffer), 1):
                     done_idx = m.end()
                     yield [m.group(1)]
@@ -127,21 +165,29 @@ class ListOutputParser(BaseTransformOutputParser[list[str]]):
             except NotImplementedError:
                 parts = self.parse(buffer)
                 # Yield only complete parts
+                # 中文: 只生产完整的零件
                 if len(parts) > 1:
                     for part in parts[:-1]:
                         yield [part]
                     buffer = parts[-1]
         # Yield the last part
+        # 中文: 产生最后一部分
         for part in self.parse(buffer):
             yield [part]
 
 
 class CommaSeparatedListOutputParser(ListOutputParser):
-    """Parse the output of a model to a comma-separated list."""
+    """Parse the output of a model to a comma-separated list.
+
+    中文翻译:
+    将模型的输出解析为逗号分隔的列表。"""
 
     @classmethod
     def is_lc_serializable(cls) -> bool:
-        """Return `True` as this class is serializable."""
+        """Return `True` as this class is serializable.
+
+        中文翻译:
+        返回“True”，因为此类是可序列化的。"""
         return True
 
     @classmethod
@@ -150,12 +196,20 @@ class CommaSeparatedListOutputParser(ListOutputParser):
 
         Returns:
             `["langchain", "output_parsers", "list"]`
-        """
+        
+
+        中文翻译:
+        获取LangChain对象的命名空间。
+        返回：
+            `[“langchain”，“output_parsers”，“列表”]`"""
         return ["langchain", "output_parsers", "list"]
 
     @override
     def get_format_instructions(self) -> str:
-        """Return the format instructions for the comma-separated list output."""
+        """Return the format instructions for the comma-separated list output.
+
+        中文翻译:
+        返回逗号分隔列表输出的格式指令。"""
         return (
             "Your response should be a list of comma separated values, "
             "eg: `foo, bar, baz` or `foo,bar,baz`"
@@ -170,7 +224,14 @@ class CommaSeparatedListOutputParser(ListOutputParser):
 
         Returns:
             A list of strings.
-        """
+        
+
+        中文翻译:
+        解析 LLM 调用的输出。
+        参数：
+            文本：LLM 调用的输出。
+        返回：
+            字符串列表。"""
         try:
             reader = csv.reader(
                 StringIO(text), quotechar='"', delimiter=",", skipinitialspace=True
@@ -178,6 +239,7 @@ class CommaSeparatedListOutputParser(ListOutputParser):
             return [item for sublist in reader for item in sublist]
         except csv.Error:
             # Keep old logic for backup
+            # 中文: 保留旧逻辑进行备份
             return [part.strip() for part in text.split(",")]
 
     @property
@@ -186,10 +248,16 @@ class CommaSeparatedListOutputParser(ListOutputParser):
 
 
 class NumberedListOutputParser(ListOutputParser):
-    """Parse a numbered list."""
+    """Parse a numbered list.
+
+    中文翻译:
+    解析编号列表。"""
 
     pattern: str = r"\d+\.\s([^\n]+)"
-    """The pattern to match a numbered list item."""
+    """The pattern to match a numbered list item.
+
+    中文翻译:
+    匹配编号列表项的模式。"""
 
     @override
     def get_format_instructions(self) -> str:
@@ -206,7 +274,14 @@ class NumberedListOutputParser(ListOutputParser):
 
         Returns:
             A list of strings.
-        """
+        
+
+        中文翻译:
+        解析 LLM 调用的输出。
+        参数：
+            文本：LLM 调用的输出。
+        返回：
+            字符串列表。"""
         return re.findall(self.pattern, text)
 
     @override
@@ -219,14 +294,23 @@ class NumberedListOutputParser(ListOutputParser):
 
 
 class MarkdownListOutputParser(ListOutputParser):
-    """Parse a Markdown list."""
+    """Parse a Markdown list.
+
+    中文翻译:
+    Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know."""
 
     pattern: str = r"^\s*[-*]\s([^\n]+)$"
-    """The pattern to match a Markdown list item."""
+    """The pattern to match a Markdown list item.
+
+    中文翻译:
+    匹配 Markdown 列表项的模式。"""
 
     @override
     def get_format_instructions(self) -> str:
-        """Return the format instructions for the Markdown list output."""
+        """Return the format instructions for the Markdown list output.
+
+        中文翻译:
+        返回 Markdown 列表输出的格式说明。"""
         return "Your response should be a markdown list, eg: `- foo\n- bar\n- baz`"
 
     def parse(self, text: str) -> list[str]:
@@ -237,7 +321,14 @@ class MarkdownListOutputParser(ListOutputParser):
 
         Returns:
             A list of strings.
-        """
+        
+
+        中文翻译:
+        解析 LLM 调用的输出。
+        参数：
+            文本：LLM 调用的输出。
+        返回：
+            字符串列表。"""
         return re.findall(self.pattern, text, re.MULTILINE)
 
     @override
